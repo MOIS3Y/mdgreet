@@ -1,15 +1,13 @@
+use crate::GreeterWindow;
 use crate::config::BackgroundConfig;
 use crate::utils;
 use slint::Image;
 use std::path::Path;
 
-pub struct Background {
-    pub original: Image,
-    pub blurred: Image,
-}
+pub struct Background;
 
 impl Background {
-    pub fn load(config: &BackgroundConfig) -> Self {
+    pub fn init(ui: &GreeterWindow, config: &BackgroundConfig) {
         let path_str = config.path.as_deref().unwrap_or("ui/images/background.png");
         let blur = config.blur.unwrap_or(10.0);
 
@@ -29,6 +27,7 @@ impl Background {
             }
         };
 
-        Self { original, blurred }
+        ui.set_background_original(original);
+        ui.set_background_blurred(blurred);
     }
 }

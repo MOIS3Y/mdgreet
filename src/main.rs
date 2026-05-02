@@ -19,60 +19,17 @@ async fn main() {
     let config = GreeterConfig::load(&args.config);
     let is_dark = config.is_dark_mode();
 
-    // 1. Background
-    let background = app::background::Background::load(&config.background);
-    ui.set_background_original(background.original);
-    ui.set_background_blurred(background.blurred);
-
-    // 2. Auth & Users
-    let system_users = utils::systems::get_users().await.unwrap_or_else(|e| {
-        eprintln!("systems: failed to fetch real users: {}", e);
-        Vec::new()
-    });
-
-    let users_data = if system_users.is_empty() {
-        app::auth::Auth::get_mock_users()
-    } else {
-        println!(
-            "systems: loaded {} users from AccountsService",
-            system_users.len()
-        );
-        app::auth::Auth::convert_system_users(system_users)
-    };
-
-    let (users_model, user_menu_model) = app::auth::Auth::prepare_ui_models(&users_data);
-    ui.set_users(users_model.into());
-    ui.set_user_menu_items(user_menu_model.into());
-    ui.set_selected_user_index(-1);
-
-    // 3. Sessions & Compositors
-    let system_sessions = utils::systems::get_sessions();
-    let compositors = if system_sessions.is_empty() {
-        println!("systems: WARNING: No sessions discovered in the system!");
-        Vec::new()
-    } else {
-        println!(
-            "systems: discovered {} real sessions:",
-            system_sessions.len()
-        );
-        for s in &system_sessions {
-            println!("  - {} ({})", s.name, s.exec);
-        }
-        app::session::Session::convert_system_sessions(system_sessions)
-    };
-
-    let (comp_model, comp_menu_model, comp_icon) =
-        app::session::Session::prepare_ui_models(&compositors);
-    ui.set_compositors(comp_model.into());
-    ui.set_compositor_menu_items(comp_menu_model.into());
-    ui.set_selected_compositor_index(0);
-    ui.set_composer_icon(comp_icon);
-
-    // 4. Theme
+    // Initialize modules
+    app::Background::init(&ui, &config.background);
+    let users_data = app::Auth::init(&ui).await;
+    app::Session::init(&ui);
+    app::Power::init(&ui, &config.power);
     app::theme::load_and_apply(&ui, &config.theme.name);
+
+    // Apply color scheme
     ui.invoke_set_color_scheme(is_dark);
 
-    // 5. Timer (Clock & Date)
+    // Clock and Date timer
     let ui_weak = ui.as_weak();
     let update_time = move || {
         if let Some(ui) = ui_weak.upgrade() {
@@ -86,17 +43,16 @@ async fn main() {
     let timer = Timer::default();
     timer.start(TimerMode::Repeated, Duration::from_secs(1), update_time);
 
-    // 6. Callbacks
-    let ui_login = ui.as_weak();
-    let users_data_clone = users_data.clone();
+    // Authentication Logic
+    let ui_handle = ui.as_weak();
     ui.on_login(move |username_or_login, password| {
-        let ui = ui_login.unwrap();
+        let ui = ui_handle.unwrap();
         if username_or_login.is_empty() {
             ui.set_auth_error(SharedString::from("Please select a user"));
             return;
         }
 
-        let user_data = users_data_clone
+        let user_data = users_data
             .iter()
             .find(|u| u.login == username_or_login || u.pretty_name == username_or_login);
         match user_data {
@@ -127,28 +83,6 @@ async fn main() {
             }
         }
     });
-
-    ui.on_compositor_selected(|idx| {
-        println!("Compositor selected at index {}", idx);
-    });
-
-    let power_config = config.power.clone();
-    let shutdown_cmd = power_config
-        .shutdown
-        .unwrap_or_else(|| "systemctl poweroff".to_string());
-    ui.on_shutdown(move || println!("Power Action: Shutdown with command '{}'", shutdown_cmd));
-    let reboot_cmd = power_config
-        .reboot
-        .unwrap_or_else(|| "systemctl reboot".to_string());
-    ui.on_reboot(move || println!("Power Action: Reboot with command '{}'", reboot_cmd));
-    let sleep_cmd = power_config
-        .sleep
-        .unwrap_or_else(|| "systemctl suspend".to_string());
-    ui.on_sleep(move || println!("Power Action: Sleep with command '{}'", sleep_cmd));
-    let hibernate_cmd = power_config
-        .hibernate
-        .unwrap_or_else(|| "systemctl hibernate".to_string());
-    ui.on_hibernate(move || println!("Power Action: Hibernate with command '{}'", hibernate_cmd));
 
     ui.run().unwrap();
 }
