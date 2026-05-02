@@ -1,35 +1,29 @@
+use crate::utils::systems::SystemUser;
 use slint::{Image, SharedString, VecModel};
 use std::path::Path;
 use std::rc::Rc;
 
-// Structural mirror for Rust backend data
-pub struct UserData {
-    pub login: SharedString,
-    pub pretty_name: SharedString,
-    pub password: SharedString,
-}
-
 pub struct Auth;
 
 impl Auth {
-    pub fn get_mock_users() -> Vec<UserData> {
+    pub fn get_mock_users() -> Vec<crate::UserData> {
         vec![
-            UserData {
+            crate::UserData {
                 login: SharedString::from("stepan"),
                 pretty_name: SharedString::from("Stepan Yankevych"),
                 password: SharedString::from("1234"),
             },
-            UserData {
+            crate::UserData {
                 login: SharedString::from("guest"),
                 pretty_name: SharedString::from("Guest User"),
                 password: SharedString::from(""),
             },
-            UserData {
+            crate::UserData {
                 login: SharedString::from("linux_pro"),
                 pretty_name: SharedString::from(""),
                 password: SharedString::from("linux"),
             },
-            UserData {
+            crate::UserData {
                 login: SharedString::from("jdoe"),
                 pretty_name: SharedString::from("John Doe"),
                 password: SharedString::from("admin"),
@@ -37,8 +31,19 @@ impl Auth {
         ]
     }
 
+    pub fn convert_system_users(system_users: Vec<SystemUser>) -> Vec<crate::UserData> {
+        system_users
+            .into_iter()
+            .map(|u| crate::UserData {
+                login: SharedString::from(u.login),
+                pretty_name: SharedString::from(u.pretty_name),
+                password: SharedString::from(""), // Real password validation later
+            })
+            .collect()
+    }
+
     pub fn prepare_ui_models(
-        users_data: &[UserData],
+        users_data: &[crate::UserData],
     ) -> (Rc<VecModel<crate::User>>, Rc<VecModel<crate::MenuItem>>) {
         let users_vec: Vec<crate::User> = users_data
             .iter()
@@ -51,7 +56,7 @@ impl Auth {
 
                 let initials = display_name
                     .split_whitespace()
-                    .map(|s| s.chars().next().unwrap_or(' '))
+                    .map(|s: &str| s.chars().next().unwrap_or(' '))
                     .collect::<String>()
                     .to_uppercase();
 

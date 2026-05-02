@@ -11,7 +11,8 @@ use config::GreeterConfig;
 use slint::{ComponentHandle, SharedString, Timer, TimerMode};
 use std::time::Duration;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let args = Args::parse();
     let ui = GreeterWindow::new().unwrap();
 
@@ -23,8 +24,23 @@ fn main() {
     ui.set_background_original(background.original);
     ui.set_background_blurred(background.blurred);
 
-    // 2. Auth & Users
-    let users_data = app::Auth::get_mock_users();
+    // 2. Auth & Users (Real from AccountsService)
+    let system_users = utils::systems::get_users().await.unwrap_or_else(|e| {
+        eprintln!("systems: failed to fetch real users: {}", e);
+        Vec::new()
+    });
+
+    let users_data = if system_users.is_empty() {
+        println!("systems: falling back to mock users");
+        app::Auth::get_mock_users()
+    } else {
+        println!(
+            "systems: loaded {} users from AccountsService",
+            system_users.len()
+        );
+        app::Auth::convert_system_users(system_users)
+    };
+
     let (users_model, user_menu_model) = app::Auth::prepare_ui_models(&users_data);
     ui.set_users(users_model.into());
     ui.set_user_menu_items(user_menu_model.into());
@@ -58,20 +74,31 @@ fn main() {
 
     // 6. Callbacks
     let ui_login = ui.as_weak();
+    let users_data_clone = users_data.clone();
     ui.on_login(move |username_or_login, password| {
         let ui = ui_login.unwrap();
         if username_or_login.is_empty() {
             ui.set_auth_error(SharedString::from("Please select a user"));
             return;
         }
-        let user_data = users_data
+
+        let user_data = users_data_clone
             .iter()
             .find(|u| u.login == username_or_login || u.pretty_name == username_or_login);
         match user_data {
             Some(data) => {
-                if data.password == password {
+                if !data.password.is_empty() && data.password == password {
                     println!("Login successful for '{}'!", data.login);
                     slint::quit_event_loop().unwrap();
+                } else if data.password.is_empty() {
+                    if password == "greet" {
+                        println!("Demo login successful for '{}'!", data.login);
+                        slint::quit_event_loop().unwrap();
+                    } else {
+                        ui.set_auth_error(SharedString::from(
+                            "Invalid password (use 'greet' for demo)",
+                        ));
+                    }
                 } else {
                     ui.set_auth_error(SharedString::from("Invalid password"));
                 }
@@ -96,17 +123,14 @@ fn main() {
         .shutdown
         .unwrap_or_else(|| "systemctl poweroff".to_string());
     ui.on_shutdown(move || println!("Power Action: Shutdown with command '{}'", shutdown_cmd));
-
     let reboot_cmd = power_config
         .reboot
         .unwrap_or_else(|| "systemctl reboot".to_string());
     ui.on_reboot(move || println!("Power Action: Reboot with command '{}'", reboot_cmd));
-
     let sleep_cmd = power_config
         .sleep
         .unwrap_or_else(|| "systemctl suspend".to_string());
     ui.on_sleep(move || println!("Power Action: Sleep with command '{}'", sleep_cmd));
-
     let hibernate_cmd = power_config
         .hibernate
         .unwrap_or_else(|| "systemctl hibernate".to_string());
