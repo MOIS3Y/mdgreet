@@ -1,0 +1,46 @@
+export component Background {
+    in property <image> original;
+    in property <image> blurred;
+    in property <bool> show-login: false;
+
+    // Ensure the component itself occupies the full space of the window
+    width: 100%;
+    height: 100%;
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+
+        // Original Background
+        Image {
+            source: root.original;
+            width: 100%;
+            height: 100%;
+            // 'cover' is better for wallpapers as it maintains aspect ratio
+            // while ensuring the entire area is filled
+            image-fit: cover;
+        }
+
+        // Blurred Background (fades in)
+        Image {
+            source: root.blurred;
+            width: 100%;
+            height: 100%;
+            image-fit: cover;
+            opacity: root.show-login ? 1 : 0;
+            animate opacity {
+                duration: 400ms;
+                easing: ease-in-out;
+            }
+        }
+
+        // Overlay for contrast
+        Rectangle {
+            background: rgba(0, 0, 0, 0.2);
+            width: 100%;
+            height: 100%;
+            opacity: root.show-login ? 1 : 0.4;
+            animate opacity { duration: 400ms; }
+        }
+    }
+}

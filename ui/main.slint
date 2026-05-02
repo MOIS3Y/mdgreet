@@ -14,6 +14,7 @@ import { Clock } from "components/clock.slint";
 import { Login, User } from "components/login.slint";
 import { SessionSelector } from "components/session_selector.slint";
 import { PowerBottomSheet } from "components/power_menu.slint";
+import { Background } from "components/background.slint";
 
 import "./fonts/FlexRounded-R.ttf";
 import "./fonts/FlexRounded-M.ttf";
@@ -68,33 +69,10 @@ export component GreeterWindow inherits MaterialWindow {
     callback hibernate();
 
     // Background Layer
-    Rectangle {
-        Image {
-            source: root.background-original;
-            width: 100%;
-            height: 100%;
-            image-fit: fill;
-        }
-
-        Image {
-            source: root.background-blurred;
-            width: 100%;
-            height: 100%;
-            image-fit: fill;
-            opacity: root.show-login ? 1 : 0;
-            animate opacity {
-                duration: 400ms;
-                easing: ease-in-out;
-            }
-        }
-
-        Rectangle {
-            background: rgba(0, 0, 0, 0.2);
-            width: 100%;
-            height: 100%;
-            opacity: root.show-login ? 1 : 0.4;
-            animate opacity { duration: 400ms; }
-        }
+    Background {
+        original: root.background-original;
+        blurred: root.background-blurred;
+        show-login: root.show-login;
     }
 
     // Interaction Area for touch/click
