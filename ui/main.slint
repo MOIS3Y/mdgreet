@@ -6,11 +6,13 @@ import {
     FloatingActionButton,
     PopupMenu,
     MenuItem,
+    IconButton,
 } from "@material";
 import { Palette } from "std-widgets.slint";
 import { Clock } from "components/clock.slint";
 import { Login, User } from "components/login.slint";
 import { SessionSelector } from "components/session_selector.slint";
+import { PowerBottomSheet } from "components/power_menu.slint";
 
 import "./fonts/FlexRounded-R.ttf";
 import "./fonts/FlexRounded-M.ttf";
@@ -49,6 +51,11 @@ export component GreeterWindow inherits MaterialWindow {
     callback login(string, string);
     callback compositor-selected(int);
 
+    callback shutdown();
+    callback reboot();
+    callback sleep();
+    callback hibernate();
+
     // Background Layer
     Rectangle {
         Image {
@@ -79,7 +86,7 @@ export component GreeterWindow inherits MaterialWindow {
         }
     }
 
-    // Interaction Area for touch/click
+    // Interaction Area
     TouchArea {
         clicked => {
             if (!root.show-login) {
@@ -87,18 +94,15 @@ export component GreeterWindow inherits MaterialWindow {
             }
         }
 
-        // Centered Content
         if (!root.show-login): Clock {
             hours: root.hours;
             minutes: root.minutes;
             date: root.date;
         }
 
-        // Bottom Message
         if (!root.show-login): VerticalLayout {
             alignment: end;
             padding-bottom: 60px;
-
             MaterialText {
                 text: "Press any key to unlock";
                 style: MaterialTypography.body-large;
@@ -107,13 +111,11 @@ export component GreeterWindow inherits MaterialWindow {
             }
         }
 
-        // Login Card
         if (root.show-login): Rectangle {
             width: 380px;
             height: 500px;
             background: MaterialPalette.surface-container.with-alpha(0.7);
             border_radius: 32px;
-
             Login {
                 users: root.users;
                 user-menu-items: root.user-menu-items;
@@ -125,27 +127,63 @@ export component GreeterWindow inherits MaterialWindow {
         }
     }
 
-    // Show Session Selection only on Login Screen
-    if (root.show-login): VerticalLayout {
-        alignment: end;
-        HorizontalLayout {
+    // Bottom UI
+    if (root.show-login): Rectangle {
+        VerticalLayout {
             alignment: end;
-            padding-right: 24px;
             padding-bottom: 24px;
+            padding-left: 24px;
+            padding-right: 24px;
 
-            SessionSelector {
-                items: root.compositor-menu-items;
-                current-name: root.compositors[root.selected-compositor-index].name;
-                icon: @image-url("icons/dashboard_2_gear.svg");
-                selected(idx) => {
-                    root.selected-compositor-index = idx;
-                    root.compositor-selected(idx);
+            Rectangle {
+                HorizontalLayout {
+                    alignment: center;
+                    IconButton {
+                        icon: @image-url("icons/settings_power.svg");
+                        width: 48px;
+                        height: 48px;
+                        clicked => {
+                            power_menu.show();
+                        }
+                    }
+                }
+
+                HorizontalLayout {
+                    alignment: end;
+                    SessionSelector {
+                        items: root.compositor-menu-items;
+                        current-name: root.compositors[root.selected-compositor-index].name;
+                        icon: @image-url("icons/dashboard_2_gear.svg");
+                        selected(idx) => {
+                            root.selected-compositor-index = idx;
+                            root.compositor-selected(idx);
+                        }
+                    }
                 }
             }
         }
     }
 
-    // Keyboard Interaction
+    // POWER MENU AT ROOT LEVEL
+    // We bind to root.width/height directly since GreeterWindow is the root
+    power_menu := PowerBottomSheet {
+        width: root.width;
+        height: root.height;
+
+        shutdown => {
+            root.shutdown();
+        }
+        reboot => {
+            root.reboot();
+        }
+        sleep => {
+            root.sleep();
+        }
+        hibernate => {
+            root.hibernate();
+        }
+    }
+
     forward-focus: fs;
     fs := FocusScope {
         key-pressed(event) => {

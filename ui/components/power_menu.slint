@@ -1,0 +1,125 @@
+import {
+    ModalBottomSheet,
+    MaterialPalette,
+    MaterialTypography,
+    MaterialText,
+    StateLayerArea,
+} from "@material";
+
+component PowerOption {
+    in property <image> icon;
+    in property <string> text;
+    in property <color> icon-background: MaterialPalette.secondary-container;
+    in property <color> icon-color: MaterialPalette.on-secondary-container;
+
+    callback clicked();
+
+    VerticalLayout {
+        spacing: 12px;
+        alignment: center;
+
+        HorizontalLayout {
+            alignment: center;
+
+            // Circular Button with State Layer (Hover/Press effects)
+            Rectangle {
+                width: 64px;
+                height: 64px;
+                border-radius: 32px;
+                background: root.icon-background;
+                clip: true; // Needed for ripple effect
+
+                state_layer := StateLayerArea {
+                    width: 100%;
+                    height: 100%;
+                    // StateLayerArea automatically provides hover and ripple colors
+                    // based on its 'color' property (usually on-background)
+                    color: root.icon-color;
+
+                    clicked => {
+                        root.clicked();
+                    }
+
+                    Image {
+                        source: root.icon;
+                        width: 32px;
+                        height: 32px;
+                        colorize: root.icon-color;
+                    }
+                }
+            }
+        }
+
+        MaterialText {
+            text: root.text;
+            style: MaterialTypography.label-large;
+            color: MaterialPalette.on-surface;
+            horizontal-alignment: center;
+        }
+    }
+}
+
+export component PowerBottomSheet inherits ModalBottomSheet {
+    callback shutdown();
+    callback reboot();
+    callback sleep();
+    callback hibernate();
+
+    height: 220px;
+
+    VerticalLayout {
+        padding: 24px;
+        spacing: 24px;
+        alignment: center;
+
+        MaterialText {
+            text: "Power Options";
+            style: MaterialTypography.title-medium;
+            color: MaterialPalette.on-surface-variant;
+            horizontal-alignment: center;
+        }
+
+        HorizontalLayout {
+            alignment: center;
+            spacing: 32px;
+
+            PowerOption {
+                text: "Sleep";
+                icon: @image-url("../icons/bedtime.svg");
+                clicked => {
+                    root.sleep();
+                    root.close();
+                }
+            }
+
+            PowerOption {
+                text: "Hibernate";
+                icon: @image-url("../icons/mode_standby.svg");
+                clicked => {
+                    root.hibernate();
+                    root.close();
+                }
+            }
+
+            PowerOption {
+                text: "Restart";
+                icon: @image-url("../icons/restart_alt..svg");
+                clicked => {
+                    root.reboot();
+                    root.close();
+                }
+            }
+
+            PowerOption {
+                text: "Shut down";
+                icon: @image-url("../icons/power_settings.svg");
+                icon-background: MaterialPalette.error-container;
+                icon-color: MaterialPalette.on-error-container;
+                clicked => {
+                    root.shutdown();
+                    root.close();
+                }
+            }
+        }
+    }
+}

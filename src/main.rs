@@ -156,8 +156,6 @@ fn main() {
     ui.set_compositors(Rc::new(VecModel::from(compositors_vec.clone())).into());
     ui.set_compositor_menu_items(Rc::new(VecModel::from(comp_menu_items)).into());
     ui.set_selected_compositor_index(default_index as i32);
-
-    // Set initial icon for login card
     ui.set_composer_icon(comp_icon.clone());
 
     let state_clone = state.clone();
@@ -168,6 +166,41 @@ fn main() {
             state.last_compositor = Some(comp.name.to_string());
             state.save();
         }
+    });
+
+    // Power Callbacks
+    let power_config = config.power.clone().unwrap_or_default();
+
+    let shutdown_cmd = power_config
+        .shutdown
+        .unwrap_or(constants::DEFAULT_CMD_SHUTDOWN.to_string());
+    ui.on_shutdown(move || {
+        println!("Power Action: Shutdown with command '{}'", shutdown_cmd);
+        // let _ = Command::new("sh").arg("-c").arg(&shutdown_cmd).spawn();
+    });
+
+    let reboot_cmd = power_config
+        .reboot
+        .unwrap_or(constants::DEFAULT_CMD_REBOOT.to_string());
+    ui.on_reboot(move || {
+        println!("Power Action: Reboot with command '{}'", reboot_cmd);
+        // let _ = Command::new("sh").arg("-c").arg(&reboot_cmd).spawn();
+    });
+
+    let sleep_cmd = power_config
+        .sleep
+        .unwrap_or(constants::DEFAULT_CMD_SLEEP.to_string());
+    ui.on_sleep(move || {
+        println!("Power Action: Sleep with command '{}'", sleep_cmd);
+        // let _ = Command::new("sh").arg("-c").arg(&sleep_cmd).spawn();
+    });
+
+    let hibernate_cmd = power_config
+        .hibernate
+        .unwrap_or(constants::DEFAULT_CMD_HIBERNATE.to_string());
+    ui.on_hibernate(move || {
+        println!("Power Action: Hibernate with command '{}'", hibernate_cmd);
+        // let _ = Command::new("sh").arg("-c").arg(&hibernate_cmd).spawn();
     });
 
     load_and_apply_theme(&ui, &config.theme.name);

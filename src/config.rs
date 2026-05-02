@@ -15,10 +15,19 @@ pub struct BackgroundConfig {
     pub blur: Option<f32>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct PowerConfig {
+    pub shutdown: Option<String>,
+    pub reboot: Option<String>,
+    pub sleep: Option<String>,
+    pub hibernate: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GreeterConfig {
     pub theme: ThemeConfig,
     pub background: Option<BackgroundConfig>,
+    pub power: Option<PowerConfig>,
 }
 
 impl Default for GreeterConfig {
@@ -31,6 +40,12 @@ impl Default for GreeterConfig {
             background: Some(BackgroundConfig {
                 path: Some(constants::DEFAULT_BACKGROUND.to_string()),
                 blur: Some(10.0),
+            }),
+            power: Some(PowerConfig {
+                shutdown: Some(constants::DEFAULT_CMD_SHUTDOWN.to_string()),
+                reboot: Some(constants::DEFAULT_CMD_REBOOT.to_string()),
+                sleep: Some(constants::DEFAULT_CMD_SLEEP.to_string()),
+                hibernate: Some(constants::DEFAULT_CMD_HIBERNATE.to_string()),
             }),
         }
     }

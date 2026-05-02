@@ -31,3 +31,9 @@ pub const CACHE_DIR: &str = "/var/cache/mdgreet";
 
 /// Default background image path
 pub const DEFAULT_BACKGROUND: &str = "ui/images/background.png";
+
+/// Default power commands
+pub const DEFAULT_CMD_SHUTDOWN: &str = "systemctl poweroff";
+pub const DEFAULT_CMD_REBOOT: &str = "systemctl reboot";
+pub const DEFAULT_CMD_SLEEP: &str = "systemctl suspend";
+pub const DEFAULT_CMD_HIBERNATE: &str = "systemctl hibernate";
