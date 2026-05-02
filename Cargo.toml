@@ -9,6 +9,8 @@ chrono = "0.4.44"
 clap = { version = "4.6.0", features = ["derive"] }
 const_format = "0.2"
 css-color-parser2 = "1.0.1"
+dirs = "6.0.0"
+figment = { version = "0.11.5", package = "figment2", features = ["toml"] }
 greetd_ipc = { version = "0.10.3", features = ["tokio-codec"] }
 image = "0.25.10"
 libc = "0.2.186"

@@ -1,0 +1,16 @@
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ThemeConfig {
+    pub name: String,
+    pub mode: Option<String>,
+}
+
+impl Default for ThemeConfig {
+    fn default() -> Self {
+        Self {
+            name: "purple".to_string(),
+            mode: Some("dark".to_string()),
+        }
+    }
+}

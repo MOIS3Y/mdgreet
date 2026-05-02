@@ -1,7 +1,6 @@
 slint::include_modules!();
 
 mod config;
-mod constants;
 mod image_utils;
 mod theme;
 
@@ -25,29 +24,28 @@ fn main() {
     let args = Args::parse();
     let ui = GreeterWindow::new().unwrap();
 
-    let config = GreeterConfig::load_or_default(args.config.as_deref());
+    let config = GreeterConfig::load(&args.config);
     let is_dark = config.is_dark_mode();
 
     // Handle background images
-    if let Some(bg_config) = &config.background {
-        let path_str = bg_config
-            .path
-            .as_deref()
-            .unwrap_or(constants::DEFAULT_BACKGROUND);
-        let blur = bg_config.blur.unwrap_or(10.0);
+    let bg_config = &config.background;
+    let path_str = bg_config
+        .path
+        .as_deref()
+        .unwrap_or("ui/images/background.png");
+    let blur = bg_config.blur.unwrap_or(10.0);
 
-        if let Ok(orig_img) = Image::load_from_path(Path::new(path_str)) {
-            ui.set_background_original(orig_img);
-        }
+    if let Ok(orig_img) = Image::load_from_path(Path::new(path_str)) {
+        ui.set_background_original(orig_img);
+    }
 
-        match image_utils::prepare_background(path_str, blur) {
-            Ok(cached_path) => {
-                if let Ok(blur_img) = Image::load_from_path(&cached_path) {
-                    ui.set_background_blurred(blur_img);
-                }
+    match image_utils::prepare_background(path_str, blur) {
+        Ok(cached_path) => {
+            if let Ok(blur_img) = Image::load_from_path(&cached_path) {
+                ui.set_background_blurred(blur_img);
             }
-            Err(e) => eprintln!("Failed to prepare blurred background: {}", e),
         }
+        Err(e) => eprintln!("Failed to prepare blurred background: {}", e),
     }
 
     // Mock Users data
@@ -64,7 +62,7 @@ fn main() {
         },
         UserData {
             login: SharedString::from("linux_pro"),
-            pretty_name: SharedString::from(""), // No pretty name
+            pretty_name: SharedString::from(""),
             password: SharedString::from("linux"),
         },
         UserData {
@@ -90,7 +88,6 @@ fn main() {
                 .collect::<String>()
                 .to_uppercase();
 
-            // Take first two letters if it's a single word login
             let final_initials = if initials.len() == 1 && display_name.len() > 1 {
                 display_name[..2].to_uppercase()
             } else {
@@ -213,22 +210,29 @@ fn main() {
     });
 
     // Power Callbacks
-    let power_config = config.power.clone().unwrap_or_default();
+    let power_config = &config.power;
     let shutdown_cmd = power_config
         .shutdown
-        .unwrap_or(constants::DEFAULT_CMD_SHUTDOWN.to_string());
+        .clone()
+        .unwrap_or_else(|| "systemctl poweroff".to_string());
     ui.on_shutdown(move || println!("Power Action: Shutdown with command '{}'", shutdown_cmd));
+
     let reboot_cmd = power_config
         .reboot
-        .unwrap_or(constants::DEFAULT_CMD_REBOOT.to_string());
+        .clone()
+        .unwrap_or_else(|| "systemctl reboot".to_string());
     ui.on_reboot(move || println!("Power Action: Reboot with command '{}'", reboot_cmd));
+
     let sleep_cmd = power_config
         .sleep
-        .unwrap_or(constants::DEFAULT_CMD_SLEEP.to_string());
+        .clone()
+        .unwrap_or_else(|| "systemctl suspend".to_string());
     ui.on_sleep(move || println!("Power Action: Sleep with command '{}'", sleep_cmd));
+
     let hibernate_cmd = power_config
         .hibernate
-        .unwrap_or(constants::DEFAULT_CMD_HIBERNATE.to_string());
+        .clone()
+        .unwrap_or_else(|| "systemctl hibernate".to_string());
     ui.on_hibernate(move || println!("Power Action: Hibernate with command '{}'", hibernate_cmd));
 
     ui.run().unwrap();

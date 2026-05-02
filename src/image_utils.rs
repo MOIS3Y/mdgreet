@@ -1,4 +1,4 @@
-use crate::constants;
+use crate::config;
 use anyhow::{Context, Result};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -65,7 +65,7 @@ pub fn prepare_background(original_path: &str, blur_sigma: f32) -> Result<PathBu
 fn get_cache_dir() -> Result<PathBuf> {
     let uid = unsafe { libc::getuid() };
     if uid == 0 {
-        Ok(PathBuf::from(constants::CACHE_DIR))
+        Ok(PathBuf::from(config::CACHE_DIR))
     } else {
         Ok(PathBuf::from(".cache"))
     }
