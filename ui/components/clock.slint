@@ -1,0 +1,47 @@
+import { MaterialTypography, MaterialPalette, MaterialText } from "@material";
+
+export component Clock {
+    in property <string> hours: "00";
+    in property <string> minutes: "00";
+    in property <string> date: "";
+
+    VerticalLayout {
+        alignment: center;
+
+        // Clock with overlap
+        VerticalLayout {
+            spacing: -60px;
+            Text {
+                text: root.hours;
+                font-size: 200px;
+                font-weight: 500;
+                font-family: "FlexRounded";
+                color: MaterialPalette.primary;
+                horizontal-alignment: center;
+                letter-spacing: -5px;
+            }
+
+            Text {
+                text: root.minutes;
+                font-size: 200px;
+                font-weight: 500;
+                font-family: "FlexRounded";
+                color: MaterialPalette.primary-container;
+                horizontal-alignment: center;
+                letter-spacing: -5px;
+            }
+        }
+
+        Rectangle {
+            height: 20px;
+        }
+
+        // Date
+        MaterialText {
+            text: root.date;
+            style: MaterialTypography.headline-small;
+            color: white.with-alpha(0.8);
+            horizontal-alignment: center;
+        }
+    }
+}

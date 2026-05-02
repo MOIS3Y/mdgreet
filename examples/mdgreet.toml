@@ -1,0 +1,18 @@
+# mdgreet configuration example
+
+[theme]
+# Built-in themes: "purple" (default), "slint", "red", "green"
+# Use "custom" to load from material-theme.json
+name = "purple"
+
+# "dark" (default) or "light"
+mode = "dark"
+
+[background]
+# Path to the background image
+# Default: "ui/images/background.png"
+path = "ui/images/background.png"
+
+# Blur intensity (sigma value for Gaussian blur)
+# Set to 0.0 to disable blur. Default: 10.0
+blur = 10.0

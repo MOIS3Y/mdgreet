@@ -1,0 +1,20 @@
+# Rust
+target/
+
+# Slint generated files (if any)
+ui/**/*.rs
+
+# Cache and local development
+.cache/
+.mdgreet.toml
+material-theme.json
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Nix
+result
+.direnv/

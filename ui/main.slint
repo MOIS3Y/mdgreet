@@ -1,0 +1,129 @@
+import {
+    MaterialWindow,
+    MaterialTypography,
+    MaterialText,
+    MaterialPalette,
+} from "@material";
+import { Palette } from "std-widgets.slint";
+import { Clock } from "components/clock.slint";
+import { Login, User, MenuItem } from "components/login.slint";
+
+import "./fonts/FlexRounded-R.ttf";
+import "./fonts/FlexRounded-M.ttf";
+import "./fonts/FlexRounded-B.ttf";
+import "./fonts/MaterialDesignIcons.ttf";
+
+export { MaterialPalette, MaterialTypography, User }
+
+export component GreeterWindow inherits MaterialWindow {
+    in property <image> background-original;
+    in property <image> background-blurred;
+    in property <string> hours: "00";
+    in property <string> minutes: "00";
+    in property <string> date: "";
+
+    in property <[User]> users;
+    in property <[MenuItem]> user-menu-items;
+    in property <image> composer-icon;
+
+    in-out property <bool> show-login: false;
+
+    callback set-color-scheme(bool);
+    set-color-scheme(is-dark) => {
+        Palette.color-scheme = is-dark ? ColorScheme.dark : ColorScheme.light;
+    }
+
+    callback login(string, string);
+
+    // Background Layer
+    Rectangle {
+        Image {
+            source: root.background-original;
+            width: 100%;
+            height: 100%;
+            image-fit: fill;
+        }
+
+        Image {
+            source: root.background-blurred;
+            width: 100%;
+            height: 100%;
+            image-fit: fill;
+            opacity: root.show-login ? 1 : 0;
+            animate opacity {
+                duration: 400ms;
+                easing: ease-in-out;
+            }
+        }
+
+        Rectangle {
+            background: rgba(0, 0, 0, 0.2);
+            width: 100%;
+            height: 100%;
+            opacity: root.show-login ? 1 : 0.4;
+            animate opacity { duration: 400ms; }
+        }
+    }
+
+    // Interaction Area for touch/click
+    TouchArea {
+        clicked => {
+            if (!root.show-login) {
+                root.show-login = true;
+            }
+        }
+
+        // Centered Content
+        if (!root.show-login): Clock {
+            hours: root.hours;
+            minutes: root.minutes;
+            date: root.date;
+        }
+
+        // Bottom Message
+        if (!root.show-login): VerticalLayout {
+            alignment: end;
+            padding-bottom: 60px;
+
+            MaterialText {
+                text: "Press any key to unlock";
+                style: MaterialTypography.body-large;
+                color: white.with-alpha(0.5);
+                horizontal-alignment: center;
+            }
+        }
+
+        // Login Card
+        if (root.show-login): Rectangle {
+            width: 380px;
+            height: 500px;
+            background: MaterialPalette.surface-container.with-alpha(0.7);
+            border_radius: 32px;
+
+            Login {
+                users: root.users;
+                user-menu-items: root.user-menu-items;
+                composer-icon: root.composer-icon;
+                login(name, pwd) => {
+                    root.login(name, pwd);
+                }
+            }
+        }
+    }
+
+    // Keyboard Interaction
+    forward-focus: fs;
+    fs := FocusScope {
+        key-pressed(event) => {
+            if (!root.show-login) {
+                root.show-login = true;
+                return accept;
+            }
+            if (event.text == Key.Escape) {
+                root.show-login = false;
+                return accept;
+            }
+            reject
+        }
+    }
+}
