@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
-use slint::{Color, ComponentHandle};
+use slint::ComponentHandle;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) struct MaterialScheme {
@@ -171,16 +171,16 @@ pub(crate) struct MaterialTheme {
     pub schemes: MaterialSchemes,
 }
 
-fn string_to_color(color: String) -> Color {
+fn string_to_color(color: String) -> slint::Color {
     let c = color.parse::<css_color_parser2::Color>().unwrap();
-    Color::from_argb_u8((c.a * 255.) as u8, c.r, c.g, c.b)
+    slint::Color::from_argb_u8((c.a * 255.) as u8, c.r, c.g, c.b)
 }
 
 // Built-in themes
-const SLINT_THEME: &str = include_str!("../ui/themes/slint.json");
-const PURPLE_THEME: &str = include_str!("../ui/themes/purple.json");
-const RED_THEME: &str = include_str!("../ui/themes/red.json");
-const GREEN_THEME: &str = include_str!("../ui/themes/green.json");
+const SLINT_THEME: &str = include_str!("../../ui/themes/slint.json");
+const PURPLE_THEME: &str = include_str!("../../ui/themes/purple.json");
+const RED_THEME: &str = include_str!("../../ui/themes/red.json");
+const GREEN_THEME: &str = include_str!("../../ui/themes/green.json");
 
 pub fn load_builtin_theme(name: &str) -> Option<MaterialTheme> {
     let json = match name {
@@ -202,4 +202,27 @@ pub fn load_custom_theme(path: &str) -> Result<MaterialTheme> {
 pub fn apply_theme(ui: &crate::GreeterWindow, theme: &MaterialTheme) {
     let schemes: crate::MaterialSchemes = theme.schemes.clone().into();
     ui.global::<crate::MaterialPalette>().set_schemes(schemes);
+}
+
+pub fn load_and_apply(ui: &crate::GreeterWindow, theme_name: &str) {
+    let theme = if theme_name == "custom" {
+        let config_dir = std::env::var("MDGREET_CONFIG_DIR").unwrap_or_else(|_| ".".to_string());
+        let theme_path = format!("{}/material-theme.json", config_dir);
+
+        load_custom_theme(&theme_path).unwrap_or_else(|e| {
+            eprintln!("theme: failed to load custom: {}", e);
+            eprintln!("theme: falling back to purple");
+            load_builtin_theme("purple").expect("theme: failed to load fallback purple theme")
+        })
+    } else {
+        load_builtin_theme(theme_name).unwrap_or_else(|| {
+            eprintln!(
+                "theme: unknown theme '{}', falling back to purple",
+                theme_name
+            );
+            load_builtin_theme("purple").expect("theme: failed to load fallback purple theme")
+        })
+    };
+
+    apply_theme(ui, &theme);
 }
