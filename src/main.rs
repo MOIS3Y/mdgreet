@@ -1,8 +1,8 @@
 slint::include_modules!();
 
 mod config;
-mod image_utils;
 mod theme;
+mod utils;
 
 use chrono::Local;
 use clap::Parser;
@@ -39,7 +39,7 @@ fn main() {
         ui.set_background_original(orig_img);
     }
 
-    match image_utils::prepare_background(path_str, blur) {
+    match utils::image::prepare_background(path_str, blur) {
         Ok(cached_path) => {
             if let Ok(blur_img) = Image::load_from_path(&cached_path) {
                 ui.set_background_blurred(blur_img);
