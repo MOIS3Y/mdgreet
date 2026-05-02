@@ -182,47 +182,54 @@ const PURPLE_THEME: &str = include_str!("../../ui/themes/purple.json");
 const RED_THEME: &str = include_str!("../../ui/themes/red.json");
 const GREEN_THEME: &str = include_str!("../../ui/themes/green.json");
 
-pub fn load_builtin_theme(name: &str) -> Option<MaterialTheme> {
-    let json = match name {
-        "slint" => SLINT_THEME,
-        "purple" => PURPLE_THEME,
-        "red" => RED_THEME,
-        "green" => GREEN_THEME,
-        _ => return None,
-    };
-    serde_json::from_str(json).ok()
-}
+pub struct Theme;
 
-pub fn load_custom_theme(path: &str) -> Result<MaterialTheme> {
-    let content = std::fs::read_to_string(path)
-        .with_context(|| format!("theme: failed to read: {}", path))?;
-    serde_json::from_str(&content).context("theme: failed to parse JSON")
-}
+impl Theme {
+    pub fn init(ui: &crate::GreeterWindow, theme_name: &str) {
+        let theme = if theme_name == "custom" {
+            let config_dir =
+                std::env::var("MDGREET_CONFIG_DIR").unwrap_or_else(|_| ".".to_string());
+            let theme_path = format!("{}/material-theme.json", config_dir);
 
-pub fn apply_theme(ui: &crate::GreeterWindow, theme: &MaterialTheme) {
-    let schemes: crate::MaterialSchemes = theme.schemes.clone().into();
-    ui.global::<crate::MaterialPalette>().set_schemes(schemes);
-}
+            Self::load_custom_theme(&theme_path).unwrap_or_else(|e| {
+                eprintln!("theme: failed to load custom: {}", e);
+                eprintln!("theme: falling back to purple");
+                Self::load_builtin_theme("purple")
+                    .expect("theme: failed to load fallback purple theme")
+            })
+        } else {
+            Self::load_builtin_theme(theme_name).unwrap_or_else(|| {
+                eprintln!(
+                    "theme: unknown theme '{}', falling back to purple",
+                    theme_name
+                );
+                Self::load_builtin_theme("purple")
+                    .expect("theme: failed to load fallback purple theme")
+            })
+        };
 
-pub fn load_and_apply(ui: &crate::GreeterWindow, theme_name: &str) {
-    let theme = if theme_name == "custom" {
-        let config_dir = std::env::var("MDGREET_CONFIG_DIR").unwrap_or_else(|_| ".".to_string());
-        let theme_path = format!("{}/material-theme.json", config_dir);
+        Self::apply(ui, &theme);
+    }
 
-        load_custom_theme(&theme_path).unwrap_or_else(|e| {
-            eprintln!("theme: failed to load custom: {}", e);
-            eprintln!("theme: falling back to purple");
-            load_builtin_theme("purple").expect("theme: failed to load fallback purple theme")
-        })
-    } else {
-        load_builtin_theme(theme_name).unwrap_or_else(|| {
-            eprintln!(
-                "theme: unknown theme '{}', falling back to purple",
-                theme_name
-            );
-            load_builtin_theme("purple").expect("theme: failed to load fallback purple theme")
-        })
-    };
+    pub fn load_builtin_theme(name: &str) -> Option<MaterialTheme> {
+        let json = match name {
+            "slint" => SLINT_THEME,
+            "purple" => PURPLE_THEME,
+            "red" => RED_THEME,
+            "green" => GREEN_THEME,
+            _ => return None,
+        };
+        serde_json::from_str(json).ok()
+    }
 
-    apply_theme(ui, &theme);
+    pub fn load_custom_theme(path: &str) -> Result<MaterialTheme> {
+        let content = std::fs::read_to_string(path)
+            .with_context(|| format!("theme: failed to read: {}", path))?;
+        serde_json::from_str(&content).context("theme: failed to parse JSON")
+    }
+
+    pub fn apply(ui: &crate::GreeterWindow, theme: &MaterialTheme) {
+        let schemes: crate::MaterialSchemes = theme.schemes.clone().into();
+        ui.global::<crate::MaterialPalette>().set_schemes(schemes);
+    }
 }
