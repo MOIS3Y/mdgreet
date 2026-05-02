@@ -3,17 +3,26 @@ import {
     MaterialTypography,
     MaterialText,
     MaterialPalette,
+    FloatingActionButton,
+    PopupMenu,
+    MenuItem,
 } from "@material";
 import { Palette } from "std-widgets.slint";
 import { Clock } from "components/clock.slint";
-import { Login, User, MenuItem } from "components/login.slint";
+import { Login, User } from "components/login.slint";
+import { SessionSelector } from "components/session_selector.slint";
 
 import "./fonts/FlexRounded-R.ttf";
 import "./fonts/FlexRounded-M.ttf";
 import "./fonts/FlexRounded-B.ttf";
 import "./fonts/MaterialDesignIcons.ttf";
 
-export { MaterialPalette, MaterialTypography, User }
+export struct Compositor {
+    name: string,
+    exec: string,
+}
+
+export { MaterialPalette, MaterialTypography, User, MenuItem }
 
 export component GreeterWindow inherits MaterialWindow {
     in property <image> background-original;
@@ -26,6 +35,10 @@ export component GreeterWindow inherits MaterialWindow {
     in property <[MenuItem]> user-menu-items;
     in property <image> composer-icon;
 
+    in property <[Compositor]> compositors;
+    in property <[MenuItem]> compositor-menu-items;
+    in-out property <int> selected-compositor-index: 0;
+
     in-out property <bool> show-login: false;
 
     callback set-color-scheme(bool);
@@ -34,6 +47,7 @@ export component GreeterWindow inherits MaterialWindow {
     }
 
     callback login(string, string);
+    callback compositor-selected(int);
 
     // Background Layer
     Rectangle {
@@ -106,6 +120,26 @@ export component GreeterWindow inherits MaterialWindow {
                 composer-icon: root.composer-icon;
                 login(name, pwd) => {
                     root.login(name, pwd);
+                }
+            }
+        }
+    }
+
+    // Show Session Selection only on Login Screen
+    if (root.show-login): VerticalLayout {
+        alignment: end;
+        HorizontalLayout {
+            alignment: end;
+            padding-right: 24px;
+            padding-bottom: 24px;
+
+            SessionSelector {
+                items: root.compositor-menu-items;
+                current-name: root.compositors[root.selected-compositor-index].name;
+                icon: @image-url("icons/dashboard_2_gear.svg");
+                selected(idx) => {
+                    root.selected-compositor-index = idx;
+                    root.compositor-selected(idx);
                 }
             }
         }

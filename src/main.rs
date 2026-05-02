@@ -8,7 +8,10 @@ mod theme;
 use chrono::Local;
 use clap::Parser;
 use config::GreeterConfig;
+use serde::{Deserialize, Serialize};
 use slint::{ComponentHandle, Image, SharedString, Timer, TimerMode, VecModel};
+use std::fs;
+use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::time::Duration;
 
@@ -18,6 +21,42 @@ struct Args {
     /// Path to configuration file
     #[arg(short, long)]
     config: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Default, Debug)]
+struct PersistentState {
+    last_compositor: Option<String>,
+}
+
+impl PersistentState {
+    fn load() -> Self {
+        let path = get_state_path();
+        if let Ok(content) = fs::read_to_string(path) {
+            serde_json::from_str(&content).unwrap_or_default()
+        } else {
+            Self::default()
+        }
+    }
+
+    fn save(&self) {
+        let path = get_state_path();
+        if let Some(parent) = path.parent() {
+            let _ = fs::create_dir_all(parent);
+        }
+        if let Ok(content) = serde_json::to_string(self) {
+            let _ = fs::write(path, content);
+        }
+    }
+}
+
+fn get_state_path() -> PathBuf {
+    let uid = unsafe { libc::getuid() };
+    let base = if uid == 0 {
+        PathBuf::from(constants::CACHE_DIR)
+    } else {
+        PathBuf::from(".cache")
+    };
+    base.join("state.json")
 }
 
 fn main() {
@@ -35,7 +74,7 @@ fn main() {
             .unwrap_or(constants::DEFAULT_BACKGROUND);
         let blur = bg_config.blur.unwrap_or(10.0);
 
-        if let Ok(orig_img) = Image::load_from_path(std::path::Path::new(path_str)) {
+        if let Ok(orig_img) = Image::load_from_path(Path::new(path_str)) {
             ui.set_background_original(orig_img);
         }
 
@@ -63,12 +102,8 @@ fn main() {
         },
     ];
 
-    // Load person icon for menu
-    let person_icon =
-        Image::load_from_path(std::path::Path::new("ui/icons/person.svg")).unwrap_or_default();
-
-    // Create menu items from users
-    let menu_items: Vec<MenuItem> = users_vec
+    let person_icon = Image::load_from_path(Path::new("ui/icons/person.svg")).unwrap_or_default();
+    let user_menu_items: Vec<MenuItem> = users_vec
         .iter()
         .map(|u| MenuItem {
             text: u.name.clone(),
@@ -78,14 +113,62 @@ fn main() {
         })
         .collect();
 
-    // Set models
     ui.set_users(Rc::new(VecModel::from(users_vec)).into());
-    ui.set_user_menu_items(Rc::new(VecModel::from(menu_items)).into());
+    ui.set_user_menu_items(Rc::new(VecModel::from(user_menu_items)).into());
 
-    // Mock Composer Icon
-    if let Ok(icon) = Image::load_from_path(std::path::Path::new("ui/icons/niri.svg")) {
-        ui.set_composer_icon(icon);
-    }
+    // Prepare Compositors
+    let compositors_vec = vec![
+        Compositor {
+            name: SharedString::from("Niri"),
+            exec: SharedString::from("niri"),
+        },
+        Compositor {
+            name: SharedString::from("Hyprland"),
+            exec: SharedString::from("Hyprland"),
+        },
+        Compositor {
+            name: SharedString::from("Sway"),
+            exec: SharedString::from("sway"),
+        },
+    ];
+
+    let comp_icon =
+        Image::load_from_path(Path::new("ui/icons/auto_awesome_mosaic.svg")).unwrap_or_default();
+    let comp_menu_items: Vec<MenuItem> = compositors_vec
+        .iter()
+        .map(|c| MenuItem {
+            text: c.name.clone(),
+            icon: comp_icon.clone(),
+            trailing_text: SharedString::default(),
+            enabled: true,
+        })
+        .collect();
+
+    // Persistence logic
+    let state = Rc::new(std::cell::RefCell::new(PersistentState::load()));
+    let default_index = state
+        .borrow()
+        .last_compositor
+        .as_ref()
+        .and_then(|last| compositors_vec.iter().position(|c| c.name.as_str() == last))
+        .unwrap_or(0);
+
+    ui.set_compositors(Rc::new(VecModel::from(compositors_vec.clone())).into());
+    ui.set_compositor_menu_items(Rc::new(VecModel::from(comp_menu_items)).into());
+    ui.set_selected_compositor_index(default_index as i32);
+
+    // Set initial icon for login card
+    ui.set_composer_icon(comp_icon.clone());
+
+    let state_clone = state.clone();
+    let compositors_clone = compositors_vec.clone();
+    ui.on_compositor_selected(move |idx| {
+        if let Some(comp) = compositors_clone.get(idx as usize) {
+            let mut state = state_clone.borrow_mut();
+            state.last_compositor = Some(comp.name.to_string());
+            state.save();
+        }
+    });
 
     load_and_apply_theme(&ui, &config.theme.name);
     ui.invoke_set_color_scheme(is_dark);
@@ -105,7 +188,6 @@ fn main() {
     let timer = Timer::default();
     timer.start(TimerMode::Repeated, Duration::from_secs(1), update_time);
 
-    // Login Callback
     ui.on_login(|username, password| {
         println!(
             "Login attempt for user '{}': password length {}",

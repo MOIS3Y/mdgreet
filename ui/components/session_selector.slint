@@ -1,0 +1,43 @@
+import {
+    FloatingActionButton,
+    PopupMenu,
+    MenuItem,
+    MaterialPalette,
+} from "@material";
+
+export component SessionSelector {
+    in property <[MenuItem]> items;
+    in property <string> current-name;
+    in property <image> icon;
+
+    callback selected(int);
+
+    // This component acts as a container for the FAB
+    width: fab.preferred-width;
+    height: fab.preferred-height;
+
+    user_menu := PopupMenu {
+        width: 250px;
+        items: root.items;
+
+        // Position relative to the top-left of SessionSelector (which is the FAB)
+        // Shift left by the width of the menu to be to the left of the button
+        x: - self.width - 10px;
+
+        // Position above the button: negative height of menu
+        y: - (root.items.length * 50px + 40px);
+
+        activated(index) => {
+            root.selected(index);
+            self.close();
+        }
+    }
+
+    fab := FloatingActionButton {
+        icon: root.icon;
+        text: root.current-name;
+        clicked => {
+            user_menu.show();
+        }
+    }
+}
