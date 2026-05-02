@@ -1,3 +1,4 @@
+use crate::utils::systems::SystemSession;
 use slint::{Image, SharedString, VecModel};
 use std::path::Path;
 use std::rc::Rc;
@@ -5,21 +6,14 @@ use std::rc::Rc;
 pub struct Session;
 
 impl Session {
-    pub fn get_mock_compositors() -> Vec<crate::Compositor> {
-        vec![
-            crate::Compositor {
-                name: SharedString::from("Niri"),
-                exec: SharedString::from("niri"),
-            },
-            crate::Compositor {
-                name: SharedString::from("Hyprland"),
-                exec: SharedString::from("Hyprland"),
-            },
-            crate::Compositor {
-                name: SharedString::from("Sway"),
-                exec: SharedString::from("sway"),
-            },
-        ]
+    pub fn convert_system_sessions(system_sessions: Vec<SystemSession>) -> Vec<crate::Compositor> {
+        system_sessions
+            .into_iter()
+            .map(|s| crate::Compositor {
+                name: SharedString::from(s.name),
+                exec: SharedString::from(s.exec),
+            })
+            .collect()
     }
 
     pub fn prepare_ui_models(
@@ -31,19 +25,39 @@ impl Session {
     ) {
         let comp_icon = Image::load_from_path(Path::new("ui/icons/auto_awesome_mosaic.svg"))
             .unwrap_or_default();
-        let comp_menu_items: Vec<crate::MenuItem> = compositors
-            .iter()
-            .map(|c| crate::MenuItem {
-                text: c.name.clone(),
+
+        let menu_items: Vec<crate::MenuItem> = if compositors.is_empty() {
+            vec![crate::MenuItem {
+                text: SharedString::from("No sessions found"),
                 icon: comp_icon.clone(),
                 trailing_text: SharedString::default(),
-                enabled: true,
-            })
-            .collect();
+                enabled: false,
+            }]
+        } else {
+            compositors
+                .iter()
+                .map(|c| crate::MenuItem {
+                    text: c.name.clone(),
+                    icon: comp_icon.clone(),
+                    trailing_text: SharedString::default(),
+                    enabled: true,
+                })
+                .collect()
+        };
+
+        // For the compositors list itself, if empty, we provide one dummy item to avoid crashes in Slint property bindings
+        let comps_vec = if compositors.is_empty() {
+            vec![crate::Compositor {
+                name: SharedString::from("None"),
+                exec: SharedString::from(""),
+            }]
+        } else {
+            compositors.to_vec()
+        };
 
         (
-            Rc::new(VecModel::from(compositors.to_vec())),
-            Rc::new(VecModel::from(comp_menu_items)),
+            Rc::new(VecModel::from(comps_vec)),
+            Rc::new(VecModel::from(menu_items)),
             comp_icon,
         )
     }

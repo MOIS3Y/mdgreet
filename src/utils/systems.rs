@@ -1,5 +1,6 @@
 use crate::config;
 use anyhow::{Context, Result};
+use std::fs;
 use std::path::PathBuf;
 use zbus::{Connection, proxy};
 
@@ -39,6 +40,12 @@ pub struct SystemUser {
     pub avatar_path: Option<PathBuf>,
 }
 
+#[derive(Debug, Clone)]
+pub struct SystemSession {
+    pub name: String,
+    pub exec: String,
+}
+
 pub async fn get_users() -> Result<Vec<SystemUser>> {
     let conn = Connection::system()
         .await
@@ -57,7 +64,6 @@ pub async fn get_users() -> Result<Vec<SystemUser>> {
 
         let uid = user_proxy.uid().await.unwrap_or(0);
 
-        // Filter human users (usually >= 1000)
         if uid >= 1000 && uid < 65534 {
             let login = user_proxy.user_name().await.unwrap_or_default();
             let pretty_name = user_proxy.real_name().await.unwrap_or_default();
@@ -78,10 +84,87 @@ pub async fn get_users() -> Result<Vec<SystemUser>> {
         }
     }
 
-    // Sort by login
     users.sort_by(|a, b| a.login.cmp(&b.login));
-
     Ok(users)
+}
+
+pub fn get_sessions() -> Vec<SystemSession> {
+    let mut sessions = Vec::new();
+
+    // NixOS and other XDG compliant systems use XDG_DATA_DIRS
+    let xdg_data_dirs = std::env::var("XDG_DATA_DIRS")
+        .unwrap_or_else(|_| "/usr/local/share:/usr/share".to_string());
+
+    for data_dir in xdg_data_dirs.split(':') {
+        if data_dir.is_empty() {
+            continue;
+        }
+        let base_path = std::path::Path::new(data_dir);
+
+        // Scan Wayland sessions
+        scan_session_dir(&base_path.join("wayland-sessions"), &mut sessions);
+        // Scan X11 sessions
+        scan_session_dir(&base_path.join("xsessions"), &mut sessions);
+    }
+
+    // Also check greetd environments (standard greetd location)
+    let greetd_env = std::path::Path::new("/etc/greetd/environments");
+    if greetd_env.exists() {
+        if let Ok(content) = fs::read_to_string(greetd_env) {
+            for line in content.lines() {
+                let line = line.trim();
+                if !line.is_empty() && !line.starts_with('#') {
+                    sessions.push(SystemSession {
+                        name: line.to_string(),
+                        exec: line.to_string(),
+                    });
+                }
+            }
+        }
+    }
+
+    // Sort and remove duplicates
+    sessions.sort_by(|a, b| a.name.cmp(&b.name));
+    sessions.dedup_by(|a, b| a.name == b.name);
+
+    sessions
+}
+
+fn scan_session_dir(path: &std::path::Path, sessions: &mut Vec<SystemSession>) {
+    if !path.exists() || !path.is_dir() {
+        return;
+    }
+
+    if let Ok(entries) = fs::read_dir(path) {
+        for entry in entries.flatten() {
+            let entry_path = entry.path();
+            if entry_path.extension().is_some_and(|ext| ext == "desktop") {
+                if let Some(session) = parse_desktop_file(&entry_path) {
+                    sessions.push(session);
+                }
+            }
+        }
+    }
+}
+
+fn parse_desktop_file(path: &std::path::Path) -> Option<SystemSession> {
+    let content = fs::read_to_string(path).ok()?;
+    let mut name = None;
+    let mut exec = None;
+
+    for line in content.lines() {
+        let line = line.trim();
+        if line.starts_with("Name=") && name.is_none() {
+            name = Some(line.replace("Name=", ""));
+        } else if line.starts_with("Exec=") && exec.is_none() {
+            exec = Some(line.replace("Exec=", ""));
+        }
+    }
+
+    match (name, exec) {
+        (Some(n), Some(e)) => Some(SystemSession { name: n, exec: e }),
+        _ => None,
+    }
 }
 
 #[allow(dead_code)]

@@ -20,35 +20,49 @@ async fn main() {
     let is_dark = config.is_dark_mode();
 
     // 1. Background
-    let background = app::Background::load(&config.background);
+    let background = app::background::Background::load(&config.background);
     ui.set_background_original(background.original);
     ui.set_background_blurred(background.blurred);
 
-    // 2. Auth & Users (Real from AccountsService)
+    // 2. Auth & Users
     let system_users = utils::systems::get_users().await.unwrap_or_else(|e| {
         eprintln!("systems: failed to fetch real users: {}", e);
         Vec::new()
     });
 
     let users_data = if system_users.is_empty() {
-        println!("systems: falling back to mock users");
-        app::Auth::get_mock_users()
+        app::auth::Auth::get_mock_users()
     } else {
         println!(
             "systems: loaded {} users from AccountsService",
             system_users.len()
         );
-        app::Auth::convert_system_users(system_users)
+        app::auth::Auth::convert_system_users(system_users)
     };
 
-    let (users_model, user_menu_model) = app::Auth::prepare_ui_models(&users_data);
+    let (users_model, user_menu_model) = app::auth::Auth::prepare_ui_models(&users_data);
     ui.set_users(users_model.into());
     ui.set_user_menu_items(user_menu_model.into());
     ui.set_selected_user_index(-1);
 
     // 3. Sessions & Compositors
-    let compositors = app::Session::get_mock_compositors();
-    let (comp_model, comp_menu_model, comp_icon) = app::Session::prepare_ui_models(&compositors);
+    let system_sessions = utils::systems::get_sessions();
+    let compositors = if system_sessions.is_empty() {
+        println!("systems: WARNING: No sessions discovered in the system!");
+        Vec::new()
+    } else {
+        println!(
+            "systems: discovered {} real sessions:",
+            system_sessions.len()
+        );
+        for s in &system_sessions {
+            println!("  - {} ({})", s.name, s.exec);
+        }
+        app::session::Session::convert_system_sessions(system_sessions)
+    };
+
+    let (comp_model, comp_menu_model, comp_icon) =
+        app::session::Session::prepare_ui_models(&compositors);
     ui.set_compositors(comp_model.into());
     ui.set_compositor_menu_items(comp_menu_model.into());
     ui.set_selected_compositor_index(0);
