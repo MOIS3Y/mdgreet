@@ -1,24 +1,17 @@
 slint::include_modules!();
 
+mod cli;
 mod config;
 mod theme;
 mod utils;
 
 use chrono::Local;
-use clap::Parser;
+use cli::Args;
 use config::GreeterConfig;
 use slint::{ComponentHandle, Image, SharedString, Timer, TimerMode, VecModel};
 use std::path::Path;
 use std::rc::Rc;
 use std::time::Duration;
-
-#[derive(Parser, Debug)]
-#[command(name = "mdgreet", about = "Material Design greeter")]
-struct Args {
-    /// Path to configuration file
-    #[arg(short, long)]
-    config: Option<String>,
-}
 
 fn main() {
     let args = Args::parse();
@@ -84,7 +77,7 @@ fn main() {
 
             let initials = display_name
                 .split_whitespace()
-                .map(|s| s.chars().next().unwrap_or(' '))
+                .map(|s: &str| s.chars().next().unwrap_or(' '))
                 .collect::<String>()
                 .to_uppercase();
 
