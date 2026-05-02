@@ -7,6 +7,7 @@ import {
     PopupMenu,
     MenuItem,
     IconButton,
+    MaterialWindowAdapter,
 } from "@material";
 import { Palette } from "std-widgets.slint";
 import { Clock } from "components/clock.slint";
@@ -26,6 +27,13 @@ export struct Compositor {
 
 export { MaterialPalette, MaterialTypography, User, MenuItem }
 
+// Structural mirror for Rust backend data
+export struct UserData {
+    login: string,
+    pretty_name: string,
+    password: string,
+}
+
 export component GreeterWindow inherits MaterialWindow {
     in property <image> background-original;
     in property <image> background-blurred;
@@ -36,6 +44,8 @@ export component GreeterWindow inherits MaterialWindow {
     in property <[User]> users;
     in property <[MenuItem]> user-menu-items;
     in property <image> composer-icon;
+    in-out property <int> selected-user-index: -1;
+    in-out property <string> auth-error;
 
     in property <[Compositor]> compositors;
     in property <[MenuItem]> compositor-menu-items;
@@ -50,6 +60,7 @@ export component GreeterWindow inherits MaterialWindow {
 
     callback login(string, string);
     callback compositor-selected(int);
+    callback user-selected(int);
 
     callback shutdown();
     callback reboot();
@@ -86,7 +97,7 @@ export component GreeterWindow inherits MaterialWindow {
         }
     }
 
-    // Interaction Area
+    // Interaction Area for touch/click
     TouchArea {
         clicked => {
             if (!root.show-login) {
@@ -94,15 +105,18 @@ export component GreeterWindow inherits MaterialWindow {
             }
         }
 
+        // Centered Content
         if (!root.show-login): Clock {
             hours: root.hours;
             minutes: root.minutes;
             date: root.date;
         }
 
+        // Bottom Message (Unlock)
         if (!root.show-login): VerticalLayout {
             alignment: end;
             padding-bottom: 60px;
+
             MaterialText {
                 text: "Press any key to unlock";
                 style: MaterialTypography.body-large;
@@ -111,23 +125,32 @@ export component GreeterWindow inherits MaterialWindow {
             }
         }
 
+        // Login Card
         if (root.show-login): Rectangle {
             width: 380px;
             height: 500px;
             background: MaterialPalette.surface-container.with-alpha(0.7);
             border_radius: 32px;
+
             Login {
                 users: root.users;
                 user-menu-items: root.user-menu-items;
+                selected-user-index <=> root.selected-user-index;
                 composer-icon: root.composer-icon;
-                login(name, pwd) => {
-                    root.login(name, pwd);
+                auth-error <=> root.auth-error;
+
+                login(login, pwd) => {
+                    root.login(login, pwd);
+                }
+
+                user-selected(idx) => {
+                    root.user-selected(idx);
                 }
             }
         }
     }
 
-    // Bottom UI
+    // Bottom UI (Only on Login Screen)
     if (root.show-login): Rectangle {
         VerticalLayout {
             alignment: end;
@@ -136,6 +159,7 @@ export component GreeterWindow inherits MaterialWindow {
             padding-right: 24px;
 
             Rectangle {
+                // Power Menu Trigger (Bottom Center)
                 HorizontalLayout {
                     alignment: center;
                     IconButton {
@@ -148,6 +172,7 @@ export component GreeterWindow inherits MaterialWindow {
                     }
                 }
 
+                // Session Selection (Bottom Right)
                 HorizontalLayout {
                     alignment: end;
                     SessionSelector {
@@ -164,8 +189,7 @@ export component GreeterWindow inherits MaterialWindow {
         }
     }
 
-    // POWER MENU AT ROOT LEVEL
-    // We bind to root.width/height directly since GreeterWindow is the root
+    // Power Menu Instance (Root Level for visibility)
     power_menu := PowerBottomSheet {
         width: root.width;
         height: root.height;
@@ -184,6 +208,7 @@ export component GreeterWindow inherits MaterialWindow {
         }
     }
 
+    // Keyboard Interaction
     forward-focus: fs;
     fs := FocusScope {
         key-pressed(event) => {

@@ -12,7 +12,8 @@ import { TextField } from "text_field.slint";
 import { Icons } from "../../material-1.0/ui/icons/icons.slint";
 
 export struct User {
-    name: string,
+    login: string,
+    pretty_name: string,
     initials: string,
     avatar: image,
 }
@@ -22,15 +23,28 @@ export { MenuItem }
 export component Login {
     in property <[User]> users;
     in property <[MenuItem]> user-menu-items;
-    in-out property <int> selected-user-index: 0;
+    in-out property <int> selected-user-index: -1;
     in property <image> composer-icon;
+    in-out property <string> auth-error;
 
-    callback login(string, string); // username, password
+    callback login(string, string); // login, password
+    callback user-selected(int);
 
     property <bool> manual-user-entry: false;
     property <bool> show-password: false;
     property <string> manual-username: "";
     property <string> password-text: "";
+
+    // Clear error when password or user changes
+    changed password-text => {
+        root.auth-error = "";
+    }
+    changed selected-user-index => {
+        root.auth-error = "";
+    }
+    changed manual-user-entry => {
+        root.auth-error = "";
+    }
 
     // Container for absolute positioning
     width: 100%;
@@ -54,14 +68,14 @@ export component Login {
                 background: MaterialPalette.primary-container;
                 clip: true;
 
-                if (!root.manual-user-entry && root.users[root.selected-user-index].avatar.width > 0): Image {
+                if (!root.manual-user-entry && root.selected-user-index >= 0 && root.users[root.selected-user-index].avatar.width > 0): Image {
                     source: root.users[root.selected-user-index].avatar;
                     width: 100%;
                     height: 100%;
                     image-fit: cover;
                 }
 
-                if (!root.manual-user-entry && root.users[root.selected-user-index].avatar.width == 0 && root.users[root.selected-user-index].initials != ""): MaterialText {
+                if (!root.manual-user-entry && root.selected-user-index >= 0 && root.users[root.selected-user-index].avatar.width == 0 && root.users[root.selected-user-index].initials != ""): MaterialText {
                     text: root.users[root.selected-user-index].initials;
                     style: MaterialTypography.display-small;
                     color: MaterialPalette.on-primary-container;
@@ -69,7 +83,7 @@ export component Login {
                     horizontal_alignment: center;
                 }
 
-                if (root.manual-user-entry || (root.users[root.selected-user-index].avatar.width == 0 && root.users[root.selected-user-index].initials == "")): Image {
+                if (root.manual-user-entry || root.selected-user-index < 0 || (root.users[root.selected-user-index].avatar.width == 0 && root.users[root.selected-user-index].initials == "")): Image {
                     source: @image-url("../icons/account_circle.svg");
                     width: 80%;
                     height: 80%;
@@ -91,6 +105,10 @@ export component Login {
                     items: root.user-menu-items;
                     current_index <=> root.selected-user-index;
                     leading_icon: @image-url("../icons/person.svg");
+
+                    selected(idx) => {
+                        root.user-selected(idx);
+                    }
                 }
             }
 
@@ -108,11 +126,13 @@ export component Login {
         // Password Block
         HorizontalLayout {
             alignment: center;
-            TextField {
+            password_input := TextField {
                 width: 300px;
                 label: "Password";
                 text <=> root.password-text;
                 input_type: root.show-password ? InputType.text : InputType.password;
+                has_error: root.auth-error != "";
+                supporting_text: root.auth-error;
                 leading_icon: @image-url("../icons/passkey.svg");
                 trailing_icon: root.show-password ? @image-url("../icons/visibility.svg") : @image-url("../icons/visibility_lock.svg");
 
@@ -122,7 +142,7 @@ export component Login {
 
                 accepted => {
                     root.login(
-                        root.manual-user-entry ? root.manual-username : root.users[root.selected-user-index].name,
+                        root.manual-user-entry ? root.manual-username : (root.selected-user-index >= 0 ? root.users[root.selected-user-index].login : ""),
                         self.text);
                 }
             }
@@ -151,7 +171,7 @@ export component Login {
 
         clicked => {
             root.login(
-                root.manual-user-entry ? root.manual-username : root.users[root.selected-user-index].name,
+                root.manual-user-entry ? root.manual-username : (root.selected-user-index >= 0 ? root.users[root.selected-user-index].login : ""),
                 root.password-text);
         }
     }

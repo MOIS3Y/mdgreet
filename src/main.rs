@@ -8,10 +8,8 @@ mod theme;
 use chrono::Local;
 use clap::Parser;
 use config::GreeterConfig;
-use serde::{Deserialize, Serialize};
 use slint::{ComponentHandle, Image, SharedString, Timer, TimerMode, VecModel};
-use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::rc::Rc;
 use std::time::Duration;
 
@@ -21,42 +19,6 @@ struct Args {
     /// Path to configuration file
     #[arg(short, long)]
     config: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Default, Debug)]
-struct PersistentState {
-    last_compositor: Option<String>,
-}
-
-impl PersistentState {
-    fn load() -> Self {
-        let path = get_state_path();
-        if let Ok(content) = fs::read_to_string(path) {
-            serde_json::from_str(&content).unwrap_or_default()
-        } else {
-            Self::default()
-        }
-    }
-
-    fn save(&self) {
-        let path = get_state_path();
-        if let Some(parent) = path.parent() {
-            let _ = fs::create_dir_all(parent);
-        }
-        if let Ok(content) = serde_json::to_string(self) {
-            let _ = fs::write(path, content);
-        }
-    }
-}
-
-fn get_state_path() -> PathBuf {
-    let uid = unsafe { libc::getuid() };
-    let base = if uid == 0 {
-        PathBuf::from(constants::CACHE_DIR)
-    } else {
-        PathBuf::from(".cache")
-    };
-    base.join("state.json")
 }
 
 fn main() {
@@ -88,35 +50,74 @@ fn main() {
         }
     }
 
-    // Prepare Users
-    let users_vec = vec![
-        User {
-            name: SharedString::from("Stepan Yankevych"),
-            initials: SharedString::from("SY"),
-            avatar: Image::default(),
+    // Mock Users data
+    let users_data = vec![
+        UserData {
+            login: SharedString::from("stepan"),
+            pretty_name: SharedString::from("Stepan Yankevych"),
+            password: SharedString::from("1234"),
         },
-        User {
-            name: SharedString::from("Guest User"),
-            initials: SharedString::from("GU"),
-            avatar: Image::default(),
+        UserData {
+            login: SharedString::from("guest"),
+            pretty_name: SharedString::from("Guest User"),
+            password: SharedString::from(""),
+        },
+        UserData {
+            login: SharedString::from("linux_pro"),
+            pretty_name: SharedString::from(""), // No pretty name
+            password: SharedString::from("linux"),
+        },
+        UserData {
+            login: SharedString::from("jdoe"),
+            pretty_name: SharedString::from("John Doe"),
+            password: SharedString::from("admin"),
         },
     ];
+
+    // Prepare users for UI with fallback logic
+    let users_vec: Vec<User> = users_data
+        .iter()
+        .map(|u| {
+            let display_name = if u.pretty_name.is_empty() {
+                u.login.clone()
+            } else {
+                u.pretty_name.clone()
+            };
+
+            let initials = display_name
+                .split_whitespace()
+                .map(|s| s.chars().next().unwrap_or(' '))
+                .collect::<String>()
+                .to_uppercase();
+
+            // Take first two letters if it's a single word login
+            let final_initials = if initials.len() == 1 && display_name.len() > 1 {
+                display_name[..2].to_uppercase()
+            } else {
+                initials
+            };
+
+            User {
+                login: u.login.clone(),
+                pretty_name: display_name,
+                initials: SharedString::from(final_initials),
+                avatar: Image::default(),
+            }
+        })
+        .collect();
 
     let person_icon = Image::load_from_path(Path::new("ui/icons/person.svg")).unwrap_or_default();
     let user_menu_items: Vec<MenuItem> = users_vec
         .iter()
         .map(|u| MenuItem {
-            text: u.name.clone(),
+            text: u.pretty_name.clone(),
             icon: person_icon.clone(),
             trailing_text: SharedString::default(),
             enabled: true,
         })
         .collect();
 
-    ui.set_users(Rc::new(VecModel::from(users_vec)).into());
-    ui.set_user_menu_items(Rc::new(VecModel::from(user_menu_items)).into());
-
-    // Prepare Compositors
+    // Prepare Compositors (Mocks)
     let compositors_vec = vec![
         Compositor {
             name: SharedString::from("Niri"),
@@ -144,64 +145,15 @@ fn main() {
         })
         .collect();
 
-    // Persistence logic
-    let state = Rc::new(std::cell::RefCell::new(PersistentState::load()));
-    let default_index = state
-        .borrow()
-        .last_compositor
-        .as_ref()
-        .and_then(|last| compositors_vec.iter().position(|c| c.name.as_str() == last))
-        .unwrap_or(0);
+    // Initial UI State
+    ui.set_users(Rc::new(VecModel::from(users_vec)).into());
+    ui.set_user_menu_items(Rc::new(VecModel::from(user_menu_items)).into());
+    ui.set_selected_user_index(-1);
 
-    ui.set_compositors(Rc::new(VecModel::from(compositors_vec.clone())).into());
+    ui.set_compositors(Rc::new(VecModel::from(compositors_vec)).into());
     ui.set_compositor_menu_items(Rc::new(VecModel::from(comp_menu_items)).into());
-    ui.set_selected_compositor_index(default_index as i32);
+    ui.set_selected_compositor_index(0);
     ui.set_composer_icon(comp_icon.clone());
-
-    let state_clone = state.clone();
-    let compositors_clone = compositors_vec.clone();
-    ui.on_compositor_selected(move |idx| {
-        if let Some(comp) = compositors_clone.get(idx as usize) {
-            let mut state = state_clone.borrow_mut();
-            state.last_compositor = Some(comp.name.to_string());
-            state.save();
-        }
-    });
-
-    // Power Callbacks
-    let power_config = config.power.clone().unwrap_or_default();
-
-    let shutdown_cmd = power_config
-        .shutdown
-        .unwrap_or(constants::DEFAULT_CMD_SHUTDOWN.to_string());
-    ui.on_shutdown(move || {
-        println!("Power Action: Shutdown with command '{}'", shutdown_cmd);
-        // let _ = Command::new("sh").arg("-c").arg(&shutdown_cmd).spawn();
-    });
-
-    let reboot_cmd = power_config
-        .reboot
-        .unwrap_or(constants::DEFAULT_CMD_REBOOT.to_string());
-    ui.on_reboot(move || {
-        println!("Power Action: Reboot with command '{}'", reboot_cmd);
-        // let _ = Command::new("sh").arg("-c").arg(&reboot_cmd).spawn();
-    });
-
-    let sleep_cmd = power_config
-        .sleep
-        .unwrap_or(constants::DEFAULT_CMD_SLEEP.to_string());
-    ui.on_sleep(move || {
-        println!("Power Action: Sleep with command '{}'", sleep_cmd);
-        // let _ = Command::new("sh").arg("-c").arg(&sleep_cmd).spawn();
-    });
-
-    let hibernate_cmd = power_config
-        .hibernate
-        .unwrap_or(constants::DEFAULT_CMD_HIBERNATE.to_string());
-    ui.on_hibernate(move || {
-        println!("Power Action: Hibernate with command '{}'", hibernate_cmd);
-        // let _ = Command::new("sh").arg("-c").arg(&hibernate_cmd).spawn();
-    });
 
     load_and_apply_theme(&ui, &config.theme.name);
     ui.invoke_set_color_scheme(is_dark);
@@ -221,13 +173,63 @@ fn main() {
     let timer = Timer::default();
     timer.start(TimerMode::Repeated, Duration::from_secs(1), update_time);
 
-    ui.on_login(|username, password| {
-        println!(
-            "Login attempt for user '{}': password length {}",
-            username,
-            password.len()
-        );
+    // Login Callback with Validation
+    let ui_login = ui.as_weak();
+    ui.on_login(move |username_or_login, password| {
+        let ui = ui_login.unwrap();
+
+        if username_or_login.is_empty() {
+            ui.set_auth_error(SharedString::from("Please select a user"));
+            return;
+        }
+
+        let user_data = users_data
+            .iter()
+            .find(|u| u.login == username_or_login || u.pretty_name == username_or_login);
+
+        match user_data {
+            Some(data) => {
+                if data.password == password {
+                    println!("Login successful for '{}'!", data.login);
+                    slint::quit_event_loop().unwrap();
+                } else {
+                    println!("Login failed for '{}': invalid password", data.login);
+                    ui.set_auth_error(SharedString::from("Invalid password"));
+                }
+            }
+            None => {
+                if password == "greet" {
+                    println!("Manual login successful for '{}'!", username_or_login);
+                    slint::quit_event_loop().unwrap();
+                } else {
+                    ui.set_auth_error(SharedString::from("User not found or invalid password"));
+                }
+            }
+        }
     });
+
+    ui.on_compositor_selected(|idx| {
+        println!("Compositor selected at index {}", idx);
+    });
+
+    // Power Callbacks
+    let power_config = config.power.clone().unwrap_or_default();
+    let shutdown_cmd = power_config
+        .shutdown
+        .unwrap_or(constants::DEFAULT_CMD_SHUTDOWN.to_string());
+    ui.on_shutdown(move || println!("Power Action: Shutdown with command '{}'", shutdown_cmd));
+    let reboot_cmd = power_config
+        .reboot
+        .unwrap_or(constants::DEFAULT_CMD_REBOOT.to_string());
+    ui.on_reboot(move || println!("Power Action: Reboot with command '{}'", reboot_cmd));
+    let sleep_cmd = power_config
+        .sleep
+        .unwrap_or(constants::DEFAULT_CMD_SLEEP.to_string());
+    ui.on_sleep(move || println!("Power Action: Sleep with command '{}'", sleep_cmd));
+    let hibernate_cmd = power_config
+        .hibernate
+        .unwrap_or(constants::DEFAULT_CMD_HIBERNATE.to_string());
+    ui.on_hibernate(move || println!("Power Action: Hibernate with command '{}'", hibernate_cmd));
 
     ui.run().unwrap();
 }
