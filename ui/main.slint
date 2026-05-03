@@ -30,8 +30,8 @@ export { MaterialPalette, MaterialTypography, User, MenuItem }
 
 // Structural mirror for Rust backend data
 export struct UserData {
-    login: string,
-    pretty_name: string,
+    user_name: string,
+    real_name: string,
     password: string,
 }
 
@@ -117,8 +117,8 @@ export component GreeterWindow inherits MaterialWindow {
                 composer-icon: root.composer-icon;
                 auth-error <=> root.auth-error;
 
-                login(login, pwd) => {
-                    root.login(login, pwd);
+                login(user_name, pwd) => {
+                    root.login(user_name, pwd);
                 }
 
                 user-selected(idx) => {

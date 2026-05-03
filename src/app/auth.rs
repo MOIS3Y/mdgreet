@@ -7,30 +7,31 @@ use std::rc::Rc;
 // Structural mirror for Rust backend data
 #[derive(Clone)]
 pub struct UserData {
-    pub login: SharedString,
-    pub pretty_name: SharedString,
+    pub user_name: SharedString,
+    pub real_name: SharedString,
+    #[allow(dead_code)]
     pub password: SharedString,
 }
 
 pub struct Auth;
 
 impl Auth {
-    pub async fn init(ui: &GreeterWindow) -> Vec<UserData> {
+    pub async fn init(ui: &GreeterWindow, _demo: bool) -> Vec<UserData> {
         let system_users = systems::get_users().await.unwrap_or_else(|e| {
-            eprintln!("systems: failed to fetch real users: {}", e);
+            eprintln!("systems: info: AccountsService not available ({:?})", e);
             Vec::new()
         });
 
-        let users_data = if system_users.is_empty() {
-            println!("systems: falling back to mock users");
-            Self::get_mock_users()
+        let users_data = Self::convert_system_users(system_users);
+
+        if users_data.is_empty() {
+            println!("systems: WARNING: No users discovered in the system!");
         } else {
             println!(
                 "systems: loaded {} users from AccountsService",
-                system_users.len()
+                users_data.len()
             );
-            Self::convert_system_users(system_users)
-        };
+        }
 
         let (users_model, user_menu_model) = Self::prepare_ui_models(&users_data);
         ui.set_users(users_model.into());
@@ -40,52 +41,27 @@ impl Auth {
         users_data
     }
 
-    fn get_mock_users() -> Vec<UserData> {
-        vec![
-            UserData {
-                login: SharedString::from("stepan"),
-                pretty_name: SharedString::from("Stepan Yankevych"),
-                password: SharedString::from("1234"),
-            },
-            UserData {
-                login: SharedString::from("guest"),
-                pretty_name: SharedString::from("Guest User"),
-                password: SharedString::from(""),
-            },
-            UserData {
-                login: SharedString::from("linux_pro"),
-                pretty_name: SharedString::from(""),
-                password: SharedString::from("linux"),
-            },
-            UserData {
-                login: SharedString::from("jdoe"),
-                pretty_name: SharedString::from("John Doe"),
-                password: SharedString::from("admin"),
-            },
-        ]
-    }
-
     fn convert_system_users(system_users: Vec<SystemUser>) -> Vec<UserData> {
         system_users
             .into_iter()
             .map(|u| UserData {
-                login: SharedString::from(u.login),
-                pretty_name: SharedString::from(u.pretty_name),
-                password: SharedString::from(""),
+                user_name: SharedString::from(u.user_name),
+                real_name: SharedString::from(u.real_name),
+                password: SharedString::from(""), // Greetd handles this
             })
             .collect()
     }
 
-    fn prepare_ui_models(
+    pub fn prepare_ui_models(
         users_data: &[UserData],
     ) -> (Rc<VecModel<crate::User>>, Rc<VecModel<crate::MenuItem>>) {
         let users_vec: Vec<crate::User> = users_data
             .iter()
             .map(|u| {
-                let display_name = if u.pretty_name.is_empty() {
-                    u.login.clone()
+                let display_name = if u.real_name.is_empty() {
+                    u.user_name.clone()
                 } else {
-                    u.pretty_name.clone()
+                    u.real_name.clone()
                 };
 
                 let initials = display_name
@@ -94,15 +70,16 @@ impl Auth {
                     .collect::<String>()
                     .to_uppercase();
 
-                let final_initials = if initials.len() == 1 && display_name.len() > 1 {
-                    display_name[..2].to_uppercase()
-                } else {
-                    initials
-                };
+                let final_initials =
+                    if (initials.len() == 1 || initials.is_empty()) && display_name.len() > 1 {
+                        display_name[..2.min(display_name.len())].to_uppercase()
+                    } else {
+                        initials
+                    };
 
                 crate::User {
-                    login: u.login.clone(),
-                    pretty_name: display_name,
+                    user_name: u.user_name.clone(),
+                    real_name: display_name,
                     initials: SharedString::from(final_initials),
                     avatar: Image::default(),
                 }
@@ -114,7 +91,7 @@ impl Auth {
         let menu_items: Vec<crate::MenuItem> = users_vec
             .iter()
             .map(|u| crate::MenuItem {
-                text: u.pretty_name.clone(),
+                text: u.real_name.clone(),
                 icon: person_icon.clone(),
                 trailing_text: SharedString::default(),
                 enabled: true,

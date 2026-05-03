@@ -63,7 +63,7 @@ pub fn prepare_background(original_path: &str, blur_sigma: f32) -> Result<PathBu
 }
 
 fn get_cache_dir() -> Result<PathBuf> {
-    let uid = unsafe { libc::getuid() };
+    let uid = rustix::process::getuid().as_raw();
     if uid == 0 {
         Ok(PathBuf::from(config::CACHE_DIR))
     } else {

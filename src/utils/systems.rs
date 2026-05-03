@@ -1,43 +1,37 @@
-use crate::config;
 use anyhow::{Context, Result};
+use pwd::Passwd;
 use std::fs;
-use std::path::PathBuf;
 use zbus::{Connection, proxy};
 
 #[proxy(
-    interface = "org.freedesktop.Accounts",
+    default_path = "/org/freedesktop/Accounts",
     default_service = "org.freedesktop.Accounts",
-    default_path = "/org/freedesktop/Accounts"
+    interface = "org.freedesktop.Accounts"
 )]
-trait Accounts {
+pub trait AccountsService {
     fn list_cached_users(&self) -> zbus::Result<Vec<zbus::zvariant::OwnedObjectPath>>;
 }
 
 #[proxy(
-    interface = "org.freedesktop.Accounts.User",
-    default_service = "org.freedesktop.Accounts"
+    default_service = "org.freedesktop.Accounts",
+    default_path = "/org/freedesktop/Accounts",
+    interface = "org.freedesktop.Accounts.User"
 )]
-trait User {
+pub trait User {
     #[zbus(property)]
     fn user_name(&self) -> zbus::Result<String>;
+
     #[zbus(property)]
     fn real_name(&self) -> zbus::Result<String>;
+
     #[zbus(property)]
-    fn home_directory(&self) -> zbus::Result<String>;
-    #[zbus(property)]
-    fn icon_file(&self) -> zbus::Result<String>;
-    #[zbus(property)]
-    fn uid(&self) -> zbus::Result<u64>;
+    fn shell(&self) -> zbus::Result<String>;
 }
 
 #[derive(Debug, Clone)]
 pub struct SystemUser {
-    pub login: String,
-    pub pretty_name: String,
-    #[allow(dead_code)]
-    pub home_dir: PathBuf,
-    #[allow(dead_code)]
-    pub avatar_path: Option<PathBuf>,
+    pub user_name: String,
+    pub real_name: String,
 }
 
 #[derive(Debug, Clone)]
@@ -47,51 +41,133 @@ pub struct SystemSession {
 }
 
 pub async fn get_users() -> Result<Vec<SystemUser>> {
+    // 1. Try D-Bus (AccountsService) first as it has better metadata
+    match get_users_from_dbus().await {
+        Ok(users) if !users.is_empty() => {
+            println!("systems: found {} users via D-Bus", users.len());
+            return Ok(users);
+        }
+        Ok(_) => println!("systems: D-Bus returned empty user list, falling back to passwd"),
+        Err(e) => println!("systems: D-Bus error: {:?}, falling back to passwd", e),
+    }
+
+    // 2. Fallback to /etc/passwd using the pwd crate
+    let users = get_users_from_passwd();
+    println!("systems: found {} users via /etc/passwd", users.len());
+    Ok(users)
+}
+
+async fn get_users_from_dbus() -> Result<Vec<SystemUser>> {
     let conn = Connection::system()
         .await
-        .context("systems: failed to connect to system D-Bus")?;
-    let accounts_proxy = AccountsProxy::new(&conn).await?;
+        .context("failed to connect to system D-Bus")?;
+    let accounts_proxy = AccountsServiceProxy::new(&conn)
+        .await
+        .context("failed to create AccountsService proxy")?;
 
     let user_paths = accounts_proxy
         .list_cached_users()
         .await
-        .context("systems: failed to list cached users")?;
+        .context("failed to list cached users")?;
 
     let mut users = Vec::new();
 
-    for path in user_paths {
-        let user_proxy = UserProxy::builder(&conn).path(path)?.build().await?;
+    for user_path in user_paths {
+        let user_proxy = UserProxy::builder(&conn).path(user_path)?.build().await?;
+        let user_name = user_proxy.user_name().await.unwrap_or_default();
+        let real_name = user_proxy.real_name().await.unwrap_or_default();
 
-        let uid = user_proxy.uid().await.unwrap_or(0);
+        if user_name.is_empty() {
+            continue;
+        }
 
-        if uid >= 1000 && uid < 65534 {
-            let login = user_proxy.user_name().await.unwrap_or_default();
-            let pretty_name = user_proxy.real_name().await.unwrap_or_default();
-            let home_dir = PathBuf::from(user_proxy.home_directory().await.unwrap_or_default());
-            let icon_file = user_proxy
-                .icon_file()
-                .await
-                .ok()
-                .filter(|s| !s.is_empty())
-                .map(PathBuf::from);
+        users.push(SystemUser {
+            user_name,
+            real_name,
+        });
+    }
+
+    users.sort_by(|a, b| a.user_name.cmp(&b.user_name));
+    Ok(users)
+}
+
+struct NormalUser {
+    uid_min: u32,
+    uid_max: u32,
+}
+
+impl Default for NormalUser {
+    fn default() -> Self {
+        Self {
+            uid_min: 1000,
+            uid_max: 60000,
+        }
+    }
+}
+
+impl NormalUser {
+    pub fn load() -> Self {
+        let mut min = None;
+        let mut max = None;
+
+        if let Ok(content) = fs::read_to_string("/etc/login.defs") {
+            for line in content.lines().map(str::trim) {
+                if line.starts_with("UID_MIN") {
+                    if let Some(val) = line.split_whitespace().nth(1) {
+                        min = val.parse().ok();
+                    }
+                } else if line.starts_with("UID_MAX") {
+                    if let Some(val) = line.split_whitespace().nth(1) {
+                        max = val.parse().ok();
+                    }
+                }
+            }
+        }
+
+        let def = Self::default();
+        Self {
+            uid_min: min.unwrap_or(def.uid_min),
+            uid_max: max.unwrap_or(def.uid_max),
+        }
+    }
+
+    pub fn is_normal_user(&self, uid: u32) -> bool {
+        uid >= self.uid_min && uid <= self.uid_max
+    }
+}
+
+fn get_users_from_passwd() -> Vec<SystemUser> {
+    let mut users = Vec::new();
+    let normal_user = NormalUser::load();
+
+    for entry in Passwd::iter() {
+        if normal_user.is_normal_user(entry.uid) {
+            let user_name = entry.name;
+
+            // Extract the real name from GECOS
+            let real_name = if let Some(gecos) = entry.gecos {
+                if gecos.is_empty() {
+                    user_name.clone()
+                } else {
+                    gecos.split(',').next().unwrap_or(&gecos).to_string()
+                }
+            } else {
+                user_name.clone()
+            };
 
             users.push(SystemUser {
-                login,
-                pretty_name,
-                home_dir,
-                avatar_path: icon_file,
+                user_name,
+                real_name,
             });
         }
     }
 
-    users.sort_by(|a, b| a.login.cmp(&b.login));
-    Ok(users)
+    users.sort_by(|a, b| a.user_name.cmp(&b.user_name));
+    users
 }
 
 pub fn get_sessions() -> Vec<SystemSession> {
     let mut sessions = Vec::new();
-
-    // NixOS and other XDG compliant systems use XDG_DATA_DIRS
     let xdg_data_dirs = std::env::var("XDG_DATA_DIRS")
         .unwrap_or_else(|_| "/usr/local/share:/usr/share".to_string());
 
@@ -100,10 +176,7 @@ pub fn get_sessions() -> Vec<SystemSession> {
             continue;
         }
         let base_path = std::path::Path::new(data_dir);
-
-        // Scan Wayland sessions
         scan_session_dir(&base_path.join("wayland-sessions"), &mut sessions);
-        // Scan X11 sessions
         scan_session_dir(&base_path.join("xsessions"), &mut sessions);
     }
 
@@ -165,15 +238,4 @@ fn parse_desktop_file(path: &std::path::Path) -> Option<SystemSession> {
         (Some(n), Some(e)) => Some(SystemSession { name: n, exec: e }),
         _ => None,
     }
-}
-
-#[allow(dead_code)]
-pub fn get_state_path() -> PathBuf {
-    let uid = unsafe { libc::getuid() };
-    let base = if uid == 0 {
-        PathBuf::from(config::CACHE_DIR)
-    } else {
-        PathBuf::from(".cache")
-    };
-    base.join("state.json")
 }

@@ -7,7 +7,8 @@ mod utils;
 
 use cli::Args;
 use config::GreeterConfig;
-use slint::{ComponentHandle, SharedString};
+use slint::{ComponentHandle, Model, SharedString};
+use std::sync::{Arc, Mutex};
 
 #[tokio::main]
 async fn main() {
@@ -17,59 +18,119 @@ async fn main() {
     let config = GreeterConfig::load(&args.config);
     let is_dark = config.is_dark_mode();
 
-    // 1. Initialize all modules
+    if args.demo {
+        println!("*** RUNNING IN DEMO MODE ***");
+    }
+
+    // 0. Load Cache
+    let cache = Arc::new(Mutex::new(app::Cache::load()));
+
+    // 1. Initialize modules
     app::Background::init(&ui, &config.background);
-    let users_data = app::Auth::init(&ui).await;
-    app::Session::init(&ui);
+    let users_data = app::Auth::init(&ui, args.demo).await;
+    app::Session::init(&ui, args.demo);
     app::Power::init(&ui, &config.power);
     app::Theme::init(&ui, &config.theme.name);
     let _clock_timer = app::Clock::init(&ui);
 
-    // 2. Apply global settings
+    // 2. Restore Initial State from Cache (LRU)
+    {
+        let mut cache_lock = cache.lock().unwrap();
+        if let Some(last_user) = cache_lock.last_user.clone() {
+            if let Some(pos) = users_data
+                .iter()
+                .position(|u| u.user_name.as_str() == last_user)
+            {
+                ui.set_selected_user_index(pos as i32);
+
+                if let Some(last_sess) = cache_lock.get_last_session(&last_user).cloned() {
+                    let compositors = ui.get_compositors();
+                    for i in 0..compositors.row_count() {
+                        if let Some(c) = compositors.row_data(i) {
+                            if c.name.as_str() == last_sess {
+                                ui.set_selected_compositor_index(i as i32);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 3. Settings
     ui.invoke_set_color_scheme(is_dark);
 
-    // 3. Authentication Callback
+    // 4. Persistence Callbacks (ReGreet style: auto-switch session on user selection)
+    let cache_ui = cache.clone();
+    let users_data_persistence = users_data.clone();
+    let ui_weak = ui.as_weak();
+
+    ui.on_user_selected(move |idx| {
+        if idx < 0 {
+            return;
+        }
+        if let Some(user) = users_data_persistence.get(idx as usize) {
+            let mut cache = cache_ui.lock().unwrap();
+            let username = user.user_name.to_string();
+
+            // Only switch session automatically if we have a saved preference for THIS user
+            if let Some(last_sess) = cache.get_last_session(&username).cloned() {
+                if let Some(ui) = ui_weak.upgrade() {
+                    let compositors = ui.get_compositors();
+                    for i in 0..compositors.row_count() {
+                        if let Some(c) = compositors.row_data(i) {
+                            if c.name.as_str() == last_sess {
+                                ui.set_selected_compositor_index(i as i32);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // 5. Authentication Logic
     let ui_handle = ui.as_weak();
-    ui.on_login(move |username_or_login, password| {
+    let users_data_login = users_data.clone();
+    let cache_login = cache.clone();
+
+    ui.on_login(move |username_or_login, _password| {
         let ui = ui_handle.unwrap();
         if username_or_login.is_empty() {
             ui.set_auth_error(SharedString::from("Please select a user"));
             return;
         }
 
-        let user_data = users_data
+        let user_data = users_data_login
             .iter()
-            .find(|u| u.login == username_or_login || u.pretty_name == username_or_login);
+            .find(|u| u.user_name == username_or_login || u.real_name == username_or_login);
 
         match user_data {
             Some(data) => {
-                if !data.password.is_empty() && data.password == password {
-                    println!("Login successful for '{}'!", data.login);
-                    slint::quit_event_loop().unwrap();
-                } else if data.password.is_empty() {
-                    if password == "greet" {
-                        println!("Demo login successful for '{}'!", data.login);
-                        slint::quit_event_loop().unwrap();
-                    } else {
-                        ui.set_auth_error(SharedString::from(
-                            "Invalid password (use 'greet' for demo)",
-                        ));
-                    }
-                } else {
-                    ui.set_auth_error(SharedString::from("Invalid password"));
+                // Wait for real greetd implementation to check passwords.
+                // For now, we only log the attempt.
+                println!("Login attempt for '{}'!", data.user_name);
+
+                // SAVE CACHE ON SUCCESSFUL LOGIN (ReGreet style)
+                let current_comp_idx = ui.get_selected_compositor_index();
+                if let Some(comp) = ui.get_compositors().row_data(current_comp_idx as usize) {
+                    let mut cache = cache_login.lock().unwrap();
+                    cache.set_last_user(data.user_name.to_string());
+                    cache.set_last_session(data.user_name.to_string(), comp.name.to_string());
+                    cache.save();
                 }
+
+                slint::quit_event_loop().unwrap();
             }
             None => {
-                if password == "greet" {
-                    println!("Manual login successful for '{}'!", username_or_login);
-                    slint::quit_event_loop().unwrap();
-                } else {
-                    ui.set_auth_error(SharedString::from("User not found or invalid password"));
-                }
+                // Manual entry
+                println!("Manual login attempt for '{}'!", username_or_login);
+                slint::quit_event_loop().unwrap();
             }
         }
     });
 
-    // 4. Run application
     ui.run().unwrap();
 }

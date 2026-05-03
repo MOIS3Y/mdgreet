@@ -7,11 +7,11 @@ use std::rc::Rc;
 pub struct Session;
 
 impl Session {
-    pub fn init(ui: &GreeterWindow) {
+    pub fn init(ui: &GreeterWindow, _demo: bool) {
         let system_sessions = systems::get_sessions();
-        let compositors = if system_sessions.is_empty() {
+
+        if system_sessions.is_empty() {
             println!("systems: WARNING: No sessions discovered in the system!");
-            Vec::new()
         } else {
             println!(
                 "systems: discovered {} real sessions:",
@@ -20,10 +20,11 @@ impl Session {
             for s in &system_sessions {
                 println!("  - {} ({})", s.name, s.exec);
             }
-            Self::convert_system_sessions(system_sessions)
-        };
+        }
 
+        let compositors = Self::convert_system_sessions(system_sessions);
         let (comp_model, comp_menu_model, comp_icon) = Self::prepare_ui_models(&compositors);
+
         ui.set_compositors(comp_model.into());
         ui.set_compositor_menu_items(comp_menu_model.into());
         ui.set_selected_compositor_index(0);

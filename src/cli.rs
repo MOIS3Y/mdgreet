@@ -6,6 +6,10 @@ pub struct Args {
     /// Path to configuration file
     #[arg(short, long)]
     pub config: Option<String>,
+
+    /// Run in demo mode (no greetd connection)
+    #[arg(short, long, default_value_t = false)]
+    pub demo: bool,
 }
 
 impl Args {

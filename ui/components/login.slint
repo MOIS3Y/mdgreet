@@ -12,8 +12,8 @@ import { TextField } from "text_field.slint";
 import { Icons } from "../../material-1.0/ui/icons/icons.slint";
 
 export struct User {
-    login: string,
-    pretty_name: string,
+    user_name: string,
+    real_name: string,
     initials: string,
     avatar: image,
 }
@@ -27,7 +27,7 @@ export component Login {
     in property <image> composer-icon;
     in-out property <string> auth-error;
 
-    callback login(string, string); // login, password
+    callback login(string, string); // user_name, password
     callback user-selected(int);
 
     property <bool> manual-user-entry: false;
@@ -142,7 +142,7 @@ export component Login {
 
                 accepted => {
                     root.login(
-                        root.manual-user-entry ? root.manual-username : (root.selected-user-index >= 0 ? root.users[root.selected-user-index].login : ""),
+                        root.manual-user-entry ? root.manual-username : (root.selected-user-index >= 0 ? root.users[root.selected-user-index].user_name : ""),
                         self.text);
                 }
             }
@@ -171,7 +171,7 @@ export component Login {
 
         clicked => {
             root.login(
-                root.manual-user-entry ? root.manual-username : (root.selected-user-index >= 0 ? root.users[root.selected-user-index].login : ""),
+                root.manual-user-entry ? root.manual-username : (root.selected-user-index >= 0 ? root.users[root.selected-user-index].user_name : ""),
                 root.password-text);
         }
     }
