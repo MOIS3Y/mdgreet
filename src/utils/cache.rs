@@ -12,6 +12,16 @@ use std::path::PathBuf;
 
 const CACHE_LIMIT: usize = 100;
 
+/// Returns the base directory for all cache files (state, images, etc.)
+pub fn get_cache_dir() -> PathBuf {
+    let uid = rustix::process::getuid().as_raw();
+    if uid == 0 {
+        PathBuf::from(config::CACHE_DIR)
+    } else {
+        PathBuf::from(format!(".cache/{}", config::GREETER_NAME))
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Cache {
     /// The last user who logged in
@@ -61,18 +71,11 @@ impl Cache {
     }
 
     pub fn get_last_session(&mut self, user: &str) -> Option<&String> {
-        // We use a temporary String to bypass the &String vs &str issue
         self.user_to_last_sess.get(&user.to_string())
     }
 
     fn get_path() -> PathBuf {
-        let uid = rustix::process::getuid().as_raw();
-        let base = if uid == 0 {
-            PathBuf::from(config::CACHE_DIR)
-        } else {
-            PathBuf::from(".cache/mdgreet")
-        };
-        base.join("state.toml")
+        get_cache_dir().join("state.toml")
     }
 }
 
@@ -104,7 +107,7 @@ impl<K: Serialize + Hash + Eq, V: Serialize> Serialize for LruWrapper<K, V> {
     where
         S: Serializer,
     {
-        let mut map = serializer.serialize_map(Some(self.0.len()))?;
+        let mut map = serializer.serialize_map(Some(self.len()))?;
         for (k, v) in self.0.iter() {
             map.serialize_entry(k, v)?;
         }

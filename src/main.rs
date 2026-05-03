@@ -23,7 +23,7 @@ async fn main() {
     }
 
     // 0. Load Cache
-    let cache = Arc::new(Mutex::new(app::Cache::load()));
+    let cache = Arc::new(Mutex::new(utils::cache::Cache::load()));
 
     // 1. Initialize modules
     app::Background::init(&ui, &config.background);
@@ -109,8 +109,6 @@ async fn main() {
 
         match user_data {
             Some(data) => {
-                // Wait for real greetd implementation to check passwords.
-                // For now, we only log the attempt.
                 println!("Login attempt for '{}'!", data.user_name);
 
                 // SAVE CACHE ON SUCCESSFUL LOGIN (ReGreet style)
@@ -125,7 +123,6 @@ async fn main() {
                 slint::quit_event_loop().unwrap();
             }
             None => {
-                // Manual entry
                 println!("Manual login attempt for '{}'!", username_or_login);
                 slint::quit_event_loop().unwrap();
             }

@@ -1,4 +1,4 @@
-use crate::config;
+use crate::utils;
 use anyhow::{Context, Result};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -12,7 +12,7 @@ pub fn prepare_background(original_path: &str, blur_sigma: f32) -> Result<PathBu
         ));
     }
 
-    let cache_dir = get_cache_dir()?;
+    let cache_dir = utils::cache::get_cache_dir();
     if !cache_dir.exists() {
         fs::create_dir_all(&cache_dir).context("Failed to create cache directory")?;
     }
@@ -60,13 +60,4 @@ pub fn prepare_background(original_path: &str, blur_sigma: f32) -> Result<PathBu
     }
 
     Ok(cache_path)
-}
-
-fn get_cache_dir() -> Result<PathBuf> {
-    let uid = rustix::process::getuid().as_raw();
-    if uid == 0 {
-        Ok(PathBuf::from(config::CACHE_DIR))
-    } else {
-        Ok(PathBuf::from(".cache"))
-    }
 }
