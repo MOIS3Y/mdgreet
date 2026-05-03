@@ -1,4 +1,4 @@
-import { TextField } from "text_field.slint";
+import { PasswordField } from "password_field.slint";
 import {
     MenuItem,
     StateLayer,
@@ -34,7 +34,7 @@ export component UserSelector {
         menu.show();
     }
 
-    text_field := TextField {
+    text_field := PasswordField {
         width: 100%;
         height: 100%;
         label: root.label;
@@ -85,7 +85,7 @@ export component UserSelector {
         VerticalLayout {
             alignment: start;
 
-            inner_text_field := TextField {
+            inner_text_field := PasswordField {
                 width: root.width;
                 leading_icon: root.leading_icon;
                 trailing_icon: Icons.arrow_drop_up;

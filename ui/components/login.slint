@@ -7,7 +7,7 @@ import {
     MenuItem,
     TextButton,
 } from "@material";
-import { TextField } from "text_field.slint";
+import { PasswordField } from "password_field.slint";
 import { UserSelector } from "user_selector.slint";
 import { Icons } from "../../material-1.0/ui/icons/icons.slint";
 
@@ -114,7 +114,7 @@ export component Login {
 
             if (root.manual-user-entry): HorizontalLayout {
                 alignment: center;
-                TextField {
+                PasswordField {
                     width: 300px;
                     label: "Username";
                     text <=> root.manual-username;
@@ -126,7 +126,7 @@ export component Login {
         // Password Block
         HorizontalLayout {
             alignment: center;
-            password_input := TextField {
+            password_input := PasswordField {
                 width: 300px;
                 label: "Password";
                 text <=> root.password-text;
