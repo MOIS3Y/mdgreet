@@ -3,14 +3,12 @@ import {
     MaterialPalette,
     MaterialTypography,
     MaterialText,
-    StateLayerArea,
+    OutlineIconButton,
 } from "@material";
 
 component PowerOption {
     in property <image> icon;
     in property <string> text;
-    in property <color> icon-background: MaterialPalette.secondary-container;
-    in property <color> icon-color: MaterialPalette.on-secondary-container;
 
     callback clicked();
 
@@ -21,31 +19,12 @@ component PowerOption {
         HorizontalLayout {
             alignment: center;
 
-            // Circular Button with State Layer (Hover/Press effects)
-            Rectangle {
+            OutlineIconButton {
+                icon: root.icon;
                 width: 64px;
                 height: 64px;
-                border-radius: 32px;
-                background: root.icon-background;
-                clip: true; // Needed for ripple effect
-
-                state_layer := StateLayerArea {
-                    width: 100%;
-                    height: 100%;
-                    // StateLayerArea automatically provides hover and ripple colors
-                    // based on its 'color' property (usually on-background)
-                    color: root.icon-color;
-
-                    clicked => {
-                        root.clicked();
-                    }
-
-                    Image {
-                        source: root.icon;
-                        width: 32px;
-                        height: 32px;
-                        colorize: root.icon-color;
-                    }
+                clicked => {
+                    root.clicked();
                 }
             }
         }
@@ -113,8 +92,6 @@ export component PowerBottomSheet inherits ModalBottomSheet {
             PowerOption {
                 text: "Shut down";
                 icon: @image-url("../icons/power_settings.svg");
-                icon-background: MaterialPalette.error-container;
-                icon-color: MaterialPalette.on-error-container;
                 clicked => {
                     root.shutdown();
                     root.close();
