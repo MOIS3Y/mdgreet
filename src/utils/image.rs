@@ -1,5 +1,9 @@
 use crate::utils;
 use anyhow::{Context, Result};
+use material_colors::color::Argb;
+use material_colors::quantize::Quantizer;
+use material_colors::quantize::QuantizerCelebi;
+use material_colors::score::Score;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -60,4 +64,36 @@ pub fn prepare_background(original_path: &str, blur_sigma: f32) -> Result<PathBu
     }
 
     Ok(cache_path)
+}
+
+/// Extracts the seed color from an image for dynamic theming.
+/// Follows official material-colors optimization guidelines.
+pub fn extract_seed_color(path: &str) -> Result<[u8; 4]> {
+    let img = image::open(path).context("Failed to open image for color extraction")?;
+
+    // Optimization: Resize to 128x128 with Lanczos3 filter as recommended
+    let resized = img.resize_exact(128, 128, image::imageops::FilterType::Lanczos3);
+    let rgb = resized.to_rgba8();
+
+    // Convert pixels to Argb format for material-colors quantizer
+    let mut pixels = Vec::with_capacity(128 * 128);
+    for pixel in rgb.pixels() {
+        let [r, g, b, a] = pixel.0;
+        pixels.push(Argb::new(a, r, g, b));
+    }
+
+    // Quantize colors
+    let colors = QuantizerCelebi::quantize(&pixels, 128);
+
+    // Score colors and get the best one
+    // Signature for 0.4.2: score(map, top_count, fallback, filter)
+    let ranked = Score::score(&colors.color_to_count, Some(1), None, None);
+    let best_color = ranked.get(0).cloned().unwrap_or(Argb::from_u32(0xFF445E91));
+
+    Ok([
+        best_color.red,
+        best_color.green,
+        best_color.blue,
+        best_color.alpha,
+    ])
 }

@@ -1,6 +1,12 @@
+use crate::utils;
 use anyhow::{Context, Result};
+use material_colors::color::Argb;
+use material_colors::theme::ThemeBuilder;
 use serde::{Deserialize, Serialize};
-use slint::ComponentHandle;
+use slint::{ComponentHandle, Image};
+use std::fs;
+use std::path::Path;
+use std::time::UNIX_EPOCH;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) struct MaterialScheme {
@@ -171,12 +177,30 @@ pub(crate) struct MaterialTheme {
     pub schemes: MaterialSchemes,
 }
 
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+struct ThemeMetadata {
+    mode: String,
+    wallpaper_path: String,
+    wallpaper_mtime: u64,
+    seed_color: String,
+}
+
 fn string_to_color(color: String) -> slint::Color {
-    let c = color.parse::<css_color_parser2::Color>().unwrap();
+    let c = color
+        .parse::<css_color_parser2::Color>()
+        .unwrap_or_else(|_| css_color_parser2::Color {
+            r: 0,
+            g: 0,
+            b: 0,
+            a: 1.0,
+        });
     slint::Color::from_argb_u8((c.a * 255.) as u8, c.r, c.g, c.b)
 }
 
-// Built-in themes
+fn argb_to_hex(argb: Argb) -> String {
+    format!("#{:02x}{:02x}{:02x}", argb.red, argb.green, argb.blue)
+}
+
 const SLINT_THEME: &str = include_str!("../../ui/themes/slint.json");
 const PURPLE_THEME: &str = include_str!("../../ui/themes/purple.json");
 const RED_THEME: &str = include_str!("../../ui/themes/red.json");
@@ -185,30 +209,185 @@ const GREEN_THEME: &str = include_str!("../../ui/themes/green.json");
 pub struct Theme;
 
 impl Theme {
-    pub fn init(ui: &crate::GreeterWindow, theme_name: &str) {
-        let theme = if theme_name == "custom" {
-            let config_dir =
-                std::env::var("MDGREET_CONFIG_DIR").unwrap_or_else(|_| ".".to_string());
-            let theme_path = format!("{}/material-theme.json", config_dir);
+    pub fn init(ui: &crate::GreeterWindow, config: &crate::config::GreeterConfig) {
+        // 1. Initialize Background
+        let bg_config = &config.background;
+        let wallpaper_path = bg_config
+            .path
+            .as_deref()
+            .unwrap_or("ui/images/background.png");
+        let blur_sigma = bg_config.blur.unwrap_or(10.0);
 
-            Self::load_custom_theme(&theme_path).unwrap_or_else(|e| {
-                eprintln!("theme: failed to load custom: {}", e);
-                eprintln!("theme: falling back to purple");
-                Self::load_builtin_theme("purple")
-                    .expect("theme: failed to load fallback purple theme")
-            })
-        } else {
-            Self::load_builtin_theme(theme_name).unwrap_or_else(|| {
-                eprintln!(
-                    "theme: unknown theme '{}', falling back to purple",
-                    theme_name
-                );
-                Self::load_builtin_theme("purple")
-                    .expect("theme: failed to load fallback purple theme")
-            })
+        let original =
+            Image::load_from_path(Path::new(wallpaper_path)).unwrap_or_else(|_| Image::default());
+
+        let blurred = match utils::image::prepare_background(wallpaper_path, blur_sigma) {
+            Ok(path) => Image::load_from_path(&path).unwrap_or_else(|_| Image::default()),
+            Err(_) => Image::default(),
+        };
+
+        ui.set_background_original(original);
+        ui.set_background_blurred(blurred);
+
+        // 2. Initialize Theme
+        let theme_name = &config.theme.name;
+        let theme = match theme_name.as_str() {
+            "custom" => {
+                let config_dir =
+                    std::env::var("MDGREET_CONFIG_DIR").unwrap_or_else(|_| ".".to_string());
+                let theme_path = format!("{}/material-theme.json", config_dir);
+                Self::load_custom_theme(&theme_path)
+                    .unwrap_or_else(|_| Self::load_builtin_theme("purple").unwrap())
+            }
+            "auto" | "seed" => Self::get_dynamic_theme(config),
+            name => Self::load_builtin_theme(name)
+                .unwrap_or_else(|| Self::load_builtin_theme("purple").unwrap()),
         };
 
         Self::apply(ui, &theme);
+    }
+
+    fn get_dynamic_theme(config: &crate::config::GreeterConfig) -> MaterialTheme {
+        let cache_dir = utils::cache::get_cache_dir();
+        let theme_path = cache_dir.join("generated_theme.json");
+        let meta_path = cache_dir.join("generated_theme.toml");
+
+        let wallpaper_path = config
+            .background
+            .path
+            .as_deref()
+            .unwrap_or("ui/images/background.png");
+        let wallpaper_mtime = fs::metadata(wallpaper_path)
+            .and_then(|m| m.modified())
+            .unwrap_or(UNIX_EPOCH)
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+
+        let current_meta = ThemeMetadata {
+            mode: config.theme.name.clone(),
+            wallpaper_path: wallpaper_path.to_string(),
+            wallpaper_mtime,
+            seed_color: config.theme.seed_color.clone().unwrap_or_default(),
+        };
+
+        // Check if cache is valid
+        let is_valid = if meta_path.exists() && theme_path.exists() {
+            if let Ok(meta_content) = fs::read_to_string(&meta_path) {
+                if let Ok(cached_meta) = toml::from_str::<ThemeMetadata>(&meta_content) {
+                    cached_meta == current_meta
+                } else {
+                    false
+                }
+            } else {
+                false
+            }
+        } else {
+            false
+        };
+
+        if is_valid {
+            if let Ok(theme_content) = fs::read_to_string(&theme_path) {
+                if let Ok(theme) = serde_json::from_str(&theme_content) {
+                    return theme;
+                }
+            }
+        }
+
+        // Cache invalid or missing, regenerate
+        println!(
+            "theme: generating dynamic theme (mode: {})",
+            current_meta.mode
+        );
+
+        let argb = if current_meta.mode == "seed" {
+            if let Ok(c) = current_meta.seed_color.parse::<css_color_parser2::Color>() {
+                Argb::new((c.a * 255.) as u8, c.r, c.g, c.b)
+            } else {
+                Argb::new(255, 68, 94, 145)
+            }
+        } else {
+            match utils::image::extract_seed_color(wallpaper_path) {
+                Ok([r, g, b, a]) => Argb::new(a, r, g, b),
+                Err(_) => Argb::new(255, 68, 94, 145),
+            }
+        };
+
+        let theme = Self::generate_from_seed(argb);
+
+        // Save to cache
+        if let Ok(theme_json) = serde_json::to_string_pretty(&theme) {
+            let _ = fs::create_dir_all(&cache_dir);
+            let _ = fs::write(&theme_path, theme_json);
+            if let Ok(meta_toml) = toml::to_string_pretty(&current_meta) {
+                let _ = fs::write(&meta_path, meta_toml);
+            }
+        }
+
+        theme
+    }
+
+    fn generate_from_seed(seed: Argb) -> MaterialTheme {
+        let m3_theme = ThemeBuilder::with_source(seed).build();
+        let light = Self::map_m3_scheme(m3_theme.schemes.light);
+        let dark = Self::map_m3_scheme(m3_theme.schemes.dark);
+        MaterialTheme {
+            schemes: MaterialSchemes { light, dark },
+        }
+    }
+
+    fn map_m3_scheme(s: material_colors::scheme::Scheme) -> MaterialScheme {
+        MaterialScheme {
+            primary: argb_to_hex(s.primary),
+            surface_tint: argb_to_hex(s.primary),
+            on_primary: argb_to_hex(s.on_primary),
+            primary_container: argb_to_hex(s.primary_container),
+            on_primary_container: argb_to_hex(s.on_primary_container),
+            secondary: argb_to_hex(s.secondary),
+            on_secondary: argb_to_hex(s.on_secondary),
+            secondary_container: argb_to_hex(s.secondary_container),
+            on_secondary_container: argb_to_hex(s.on_secondary_container),
+            tertiary: argb_to_hex(s.tertiary),
+            on_tertiary: argb_to_hex(s.on_tertiary),
+            tertiary_container: argb_to_hex(s.tertiary_container),
+            on_tertiary_container: argb_to_hex(s.on_tertiary_container),
+            error: argb_to_hex(s.error),
+            on_error: argb_to_hex(s.on_error),
+            error_container: argb_to_hex(s.error_container),
+            on_error_container: argb_to_hex(s.on_error_container),
+            background: argb_to_hex(s.background),
+            on_background: argb_to_hex(s.on_background),
+            surface: argb_to_hex(s.surface),
+            on_surface: argb_to_hex(s.on_surface),
+            surface_variant: argb_to_hex(s.surface_variant),
+            on_surface_variant: argb_to_hex(s.on_surface_variant),
+            outline: argb_to_hex(s.outline),
+            outline_variant: argb_to_hex(s.outline_variant),
+            shadow: argb_to_hex(s.shadow),
+            scrim: argb_to_hex(s.scrim),
+            inverse_surface: argb_to_hex(s.inverse_surface),
+            inverse_on_surface: argb_to_hex(s.inverse_on_surface),
+            inverse_primary: argb_to_hex(s.inverse_primary),
+            primary_fixed: argb_to_hex(s.primary),
+            on_primary_fixed: argb_to_hex(s.on_primary),
+            primary_fixed_dim: argb_to_hex(s.primary),
+            on_primary_fixed_variant: argb_to_hex(s.on_primary),
+            secondary_fixed: argb_to_hex(s.secondary),
+            on_secondary_fixed: argb_to_hex(s.on_secondary),
+            secondary_fixed_dim: argb_to_hex(s.secondary),
+            on_secondary_fixed_variant: argb_to_hex(s.on_secondary),
+            tertiary_fixed: argb_to_hex(s.tertiary),
+            on_tertiary_fixed: argb_to_hex(s.on_tertiary),
+            tertiary_fixed_dim: argb_to_hex(s.tertiary),
+            on_tertiary_fixed_variant: argb_to_hex(s.on_tertiary),
+            surface_dim: argb_to_hex(s.surface),
+            surface_bright: argb_to_hex(s.surface),
+            surface_container_lowest: argb_to_hex(s.surface),
+            surface_container_low: argb_to_hex(s.surface),
+            surface_container: argb_to_hex(s.surface),
+            surface_container_high: argb_to_hex(s.surface),
+            surface_container_highest: argb_to_hex(s.surface),
+        }
     }
 
     pub fn load_builtin_theme(name: &str) -> Option<MaterialTheme> {

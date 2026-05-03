@@ -2923,6 +2923,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "material-colors"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e226ffda362d5bc26bb8f730d637a0851eedfb05e35d92108c9d8b48d2e47941"
+dependencies = [
+ "ahash",
+ "indexmap",
+ "serde",
+]
+
+[[package]]
 name = "maybe-rayon"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2947,6 +2958,7 @@ dependencies = [
  "image",
  "libc",
  "lru",
+ "material-colors",
  "pwd",
  "rustix 1.1.4",
  "serde",

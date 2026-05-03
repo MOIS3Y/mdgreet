@@ -15,6 +15,7 @@ greetd_ipc = { version = "0.10.3", features = ["tokio-codec"] }
 image = "0.25.10"
 libc = "0.2.186"
 lru = "0.18.0"
+material-colors = "0.4.2"
 pwd = "1.4.0"
 rustix = { version = "1.1.4", features = ["process"] }
 serde = { version = "1.0.228", features = ["derive"] }

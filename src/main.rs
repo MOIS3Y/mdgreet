@@ -26,11 +26,10 @@ async fn main() {
     let cache = Arc::new(Mutex::new(utils::cache::Cache::load()));
 
     // 1. Initialize modules
-    app::Background::init(&ui, &config.background);
     let users_data = app::Auth::init(&ui, args.demo).await;
     app::Session::init(&ui, args.demo);
     app::Power::init(&ui, &config.power);
-    app::Theme::init(&ui, &config.theme.name);
+    app::Theme::init(&ui, &config); // Merged Background init inside Theme
     let _clock_timer = app::Clock::init(&ui);
 
     // 2. Restore Initial State from Cache (LRU)
@@ -61,7 +60,7 @@ async fn main() {
     // 3. Settings
     ui.invoke_set_color_scheme(is_dark);
 
-    // 4. Persistence Callbacks (ReGreet style: auto-switch session on user selection)
+    // 4. Persistence Callbacks
     let cache_ui = cache.clone();
     let users_data_persistence = users_data.clone();
     let ui_weak = ui.as_weak();
@@ -74,7 +73,6 @@ async fn main() {
             let mut cache = cache_ui.lock().unwrap();
             let username = user.user_name.to_string();
 
-            // Only switch session automatically if we have a saved preference for THIS user
             if let Some(last_sess) = cache.get_last_session(&username).cloned() {
                 if let Some(ui) = ui_weak.upgrade() {
                     let compositors = ui.get_compositors();
@@ -111,7 +109,7 @@ async fn main() {
             Some(data) => {
                 println!("Login attempt for '{}'!", data.user_name);
 
-                // SAVE CACHE ON SUCCESSFUL LOGIN (ReGreet style)
+                // SAVE CACHE ON SUCCESSFUL LOGIN
                 let current_comp_idx = ui.get_selected_compositor_index();
                 if let Some(comp) = ui.get_compositors().row_data(current_comp_idx as usize) {
                     let mut cache = cache_login.lock().unwrap();

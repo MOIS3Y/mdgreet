@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 pub struct ThemeConfig {
     pub name: String,
     pub mode: Option<String>,
+    pub seed_color: Option<String>,
 }
 
 impl Default for ThemeConfig {
@@ -11,6 +12,7 @@ impl Default for ThemeConfig {
         Self {
             name: "purple".to_string(),
             mode: Some("dark".to_string()),
+            seed_color: None,
         }
     }
 }
