@@ -4,11 +4,11 @@ import {
     MaterialText,
     IconButton,
     FilledIconButton,
-    DropDownMenu,
     MenuItem,
     TextButton,
 } from "@material";
 import { TextField } from "text_field.slint";
+import { UserSelector } from "user_selector.slint";
 import { Icons } from "../../material-1.0/ui/icons/icons.slint";
 
 export struct User {
@@ -99,7 +99,7 @@ export component Login {
 
             if (!root.manual-user-entry): HorizontalLayout {
                 alignment: center;
-                DropDownMenu {
+                UserSelector {
                     width: 300px;
                     label: "User";
                     items: root.user-menu-items;

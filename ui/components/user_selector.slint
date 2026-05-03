@@ -1,0 +1,131 @@
+import { TextField } from "text_field.slint";
+import {
+    MenuItem,
+    StateLayer,
+    MaterialPalette,
+    MaterialStyleMetrics,
+    ScrollView,
+} from "@material";
+import { Icons } from "../../material-1.0/ui/icons/icons.slint";
+import { MenuInner } from "../../material-1.0/ui/components/menu.slint";
+
+
+export component UserSelector {
+    in property <string> label;
+    in property <bool> enabled: true;
+    in property <image> leading_icon;
+    in property <[MenuItem]> items;
+    in_out property <int> current_index: -1;
+
+    callback selected(index: int);
+
+    property <length> item_height: MaterialStyleMetrics.size_56;
+    property <int> max_displayed_items: 6;
+    out property <string> text: text_field.text;
+
+    min_width: text_field.min_width;
+    min_height: text_field.min_height;
+    forward_focus: text_field;
+    accessible-role: combobox;
+    accessible_enabled: root.enabled;
+    accessible_expandable: true;
+    accessible_value <=> text_field.text;
+    accessible_action_expand => {
+        menu.show();
+    }
+
+    text_field := TextField {
+        width: 100%;
+        height: 100%;
+        label: root.label;
+        enabled: root.enabled;
+        leading_icon: root.leading_icon;
+        trailing_icon: Icons.arrow_drop_down;
+        read_only: true;
+        // Explicit binding solves the initialization bug
+        text: root.current_index >= 0 && root.current_index < root.items.length ? root.items[root.current_index].text : "";
+
+        accepted => {
+            menu.show();
+        }
+
+        key_pressed(event) => {
+            if (event.text == " ") {
+                menu.show();
+                return accept;
+            }
+            reject
+        }
+    }
+
+    state_layer := StateLayer {
+        width: 100%;
+        height: 100%;
+        background: MaterialPalette.on_surface;
+        has_hover: touch_area.has_hover;
+        enabled: root.enabled;
+    }
+
+    touch_area := TouchArea {
+        width: 100%;
+        height: 100%;
+        enabled: root.enabled;
+
+        clicked => {
+            menu.show();
+        }
+    }
+
+    menu := PopupWindow {
+        x: 0;
+        width: root.width;
+        close_policy: close_on_click_outside;
+        forward_focus: inner_text_field;
+
+        VerticalLayout {
+            alignment: start;
+
+            inner_text_field := TextField {
+                width: root.width;
+                leading_icon: root.leading_icon;
+                trailing_icon: Icons.arrow_drop_up;
+                text: text_field.text;
+                label: root.label;
+                read_only: true;
+
+                leading_icon_clicked => {
+                    menu.close();
+                }
+
+                trailing_icon_clicked => {
+                    menu.close();
+                }
+
+                accepted => {
+                    menu.close();
+                }
+            }
+
+            Rectangle {
+                width: 100%;
+                height: min(max(root.item_height, items.length * root.item_height), root.max_displayed_items * root.item_height);
+                background: MaterialPalette.surface_container;
+
+                ScrollView {
+                    VerticalLayout {
+                        menu_inner := MenuInner {
+                            current_index: root.current_index;
+                            items: root.items;
+
+                            activated(index) => {
+                                root.current_index = index;
+                                menu.close();
+                                root.selected(index);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
