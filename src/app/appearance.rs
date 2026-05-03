@@ -206,10 +206,10 @@ const PURPLE_THEME: &str = include_str!("../../ui/themes/purple.json");
 const RED_THEME: &str = include_str!("../../ui/themes/red.json");
 const GREEN_THEME: &str = include_str!("../../ui/themes/green.json");
 
-pub struct Theme;
+pub struct Appearance;
 
-impl Theme {
-    pub fn init(ui: &crate::GreeterWindow, config: &crate::config::GreeterConfig) {
+impl Appearance {
+    pub fn init(ui: &crate::GreeterWindow, config: &crate::config::AppearanceConfig) {
         // 1. Initialize Background
         let bg_config = &config.background;
         let wallpaper_path = bg_config
@@ -245,9 +245,13 @@ impl Theme {
         };
 
         Self::apply(ui, &theme);
+
+        if let Some(label) = &config.label {
+            ui.set_greeting_msg(slint::SharedString::from(label));
+        }
     }
 
-    fn get_dynamic_theme(config: &crate::config::GreeterConfig) -> MaterialTheme {
+    fn get_dynamic_theme(config: &crate::config::AppearanceConfig) -> MaterialTheme {
         let cache_dir = utils::cache::get_cache_dir();
         let theme_path = cache_dir.join("generated_theme.json");
         let meta_path = cache_dir.join("generated_theme.toml");

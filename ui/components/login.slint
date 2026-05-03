@@ -26,6 +26,7 @@ export component Login {
     in-out property <int> selected-user-index: -1;
     in property <image> composer-icon;
     in-out property <string> auth-error;
+    in property <string> greeting-msg: "Welcome!";
 
     callback login(string, string); // user_name, password
     callback user-selected(int);
@@ -46,7 +47,6 @@ export component Login {
         root.auth-error = "";
     }
 
-    // Container for absolute positioning
     width: 100%;
     height: 100%;
 
@@ -54,9 +54,15 @@ export component Login {
     VerticalLayout {
         width: 100%;
         height: 100%;
-        padding_bottom: 40px;
         spacing: 16px;
         alignment: center;
+
+        if (root.greeting-msg != ""): MaterialText {
+            text: root.greeting-msg;
+            style: MaterialTypography.headline-medium;
+            color: MaterialPalette.primary;
+            horizontal-alignment: center;
+        }
 
         // Avatar
         HorizontalLayout {
@@ -159,20 +165,21 @@ export component Login {
                 }
             }
         }
-    }
 
-    // Login Button
-    FilledIconButton {
-        icon: @image-url("../icons/fingerprint.svg");
-        width: 64px;
-        height: 64px;
-        x: (parent.width - self.width) / 2;
-        y: parent.height - 56px;
+        // Login Button
+        HorizontalLayout {
+            alignment: center;
+            FilledIconButton {
+                icon: @image-url("../icons/fingerprint.svg");
+                width: 64px;
+                height: 64px;
 
-        clicked => {
-            root.login(
-                root.manual-user-entry ? root.manual-username : (root.selected-user-index >= 0 ? root.users[root.selected-user-index].user_name : ""),
-                root.password-text);
+                clicked => {
+                    root.login(
+                        root.manual-user-entry ? root.manual-username : (root.selected-user-index >= 0 ? root.users[root.selected-user-index].user_name : ""),
+                        root.password-text);
+                }
+            }
         }
     }
 }

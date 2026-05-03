@@ -22,17 +22,16 @@ async fn main() {
         println!("*** RUNNING IN DEMO MODE ***");
     }
 
-    // 0. Load Cache
     let cache = Arc::new(Mutex::new(utils::cache::Cache::load()));
 
-    // 1. Initialize modules
+    // Initialize modules
     let users_data = app::Auth::init(&ui, args.demo).await;
     app::Session::init(&ui, args.demo);
     app::Power::init(&ui, &config.power);
-    app::Theme::init(&ui, &config); // Merged Background init inside Theme
+    app::Appearance::init(&ui, &config.appearance);
     let _clock_timer = app::Clock::init(&ui);
 
-    // 2. Restore Initial State from Cache (LRU)
+    // Restore Initial State from Cache (LRU)
     {
         let mut cache_lock = cache.lock().unwrap();
         if let Some(last_user) = cache_lock.last_user.clone() {
@@ -57,10 +56,9 @@ async fn main() {
         }
     }
 
-    // 3. Settings
     ui.invoke_set_color_scheme(is_dark);
 
-    // 4. Persistence Callbacks
+    // Persistence Callbacks
     let cache_ui = cache.clone();
     let users_data_persistence = users_data.clone();
     let ui_weak = ui.as_weak();
@@ -89,7 +87,7 @@ async fn main() {
         }
     });
 
-    // 5. Authentication Logic
+    // Authentication Logic
     let ui_handle = ui.as_weak();
     let users_data_login = users_data.clone();
     let cache_login = cache.clone();
@@ -109,7 +107,6 @@ async fn main() {
             Some(data) => {
                 println!("Login attempt for '{}'!", data.user_name);
 
-                // SAVE CACHE ON SUCCESSFUL LOGIN
                 let current_comp_idx = ui.get_selected_compositor_index();
                 if let Some(comp) = ui.get_compositors().row_data(current_comp_idx as usize) {
                     let mut cache = cache_login.lock().unwrap();

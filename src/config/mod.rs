@@ -1,3 +1,4 @@
+pub mod appearance;
 pub mod background;
 pub mod power;
 pub mod theme;
@@ -9,9 +10,8 @@ use figment::{
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
-pub use background::BackgroundConfig;
+pub use appearance::AppearanceConfig;
 pub use power::PowerConfig;
-pub use theme::ThemeConfig;
 
 /// The name for this greeter
 pub const GREETER_NAME: &str = "mdgreet";
@@ -21,14 +21,15 @@ pub const CACHE_DIR: &str = "/var/cache/mdgreet";
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct GreeterConfig {
-    pub theme: ThemeConfig,
-    pub background: BackgroundConfig,
+    #[serde(default)]
+    pub appearance: AppearanceConfig,
+    #[serde(default)]
     pub power: PowerConfig,
 }
 
 impl GreeterConfig {
     pub fn is_dark_mode(&self) -> bool {
-        match self.theme.mode.as_deref() {
+        match self.appearance.theme.mode.as_deref() {
             Some("dark") => true,
             Some("light") => false,
             _ => true,

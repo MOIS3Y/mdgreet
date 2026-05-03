@@ -28,7 +28,6 @@ export struct Compositor {
 
 export { MaterialPalette, MaterialTypography, User, MenuItem }
 
-// Structural mirror for Rust backend data
 export struct UserData {
     user_name: string,
     real_name: string,
@@ -41,6 +40,7 @@ export component GreeterWindow inherits MaterialWindow {
     in property <string> hours: "00";
     in property <string> minutes: "00";
     in property <string> date: "";
+    in property <string> greeting-msg: "Welcome!";
 
     in property <[User]> users;
     in property <[MenuItem]> user-menu-items;
@@ -75,7 +75,7 @@ export component GreeterWindow inherits MaterialWindow {
         show-login: root.show-login;
     }
 
-    // Interaction Area for touch/click
+    // Interaction Area
     TouchArea {
         clicked => {
             if (!root.show-login) {
@@ -116,6 +116,7 @@ export component GreeterWindow inherits MaterialWindow {
                 selected-user-index <=> root.selected-user-index;
                 composer-icon: root.composer-icon;
                 auth-error <=> root.auth-error;
+                greeting-msg: root.greeting-msg;
 
                 login(user_name, pwd) => {
                     root.login(user_name, pwd);
@@ -128,7 +129,7 @@ export component GreeterWindow inherits MaterialWindow {
         }
     }
 
-    // Bottom UI (Only on Login Screen)
+    // Bottom UI
     if (root.show-login): Rectangle {
         VerticalLayout {
             alignment: end;
@@ -137,7 +138,7 @@ export component GreeterWindow inherits MaterialWindow {
             padding-right: 24px;
 
             Rectangle {
-                // Power Menu Trigger (Bottom Center)
+                // Power Menu Trigger
                 HorizontalLayout {
                     alignment: center;
                     IconButton {
@@ -150,7 +151,7 @@ export component GreeterWindow inherits MaterialWindow {
                     }
                 }
 
-                // Session Selection (Bottom Right)
+                // Session Selection
                 HorizontalLayout {
                     alignment: end;
                     SessionSelector {
@@ -167,7 +168,7 @@ export component GreeterWindow inherits MaterialWindow {
         }
     }
 
-    // Power Menu Instance (Root Level for visibility)
+    // Power Menu Instance
     power_menu := PowerBottomSheet {
         width: root.width;
         height: root.height;

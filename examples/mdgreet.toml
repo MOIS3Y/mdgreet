@@ -1,14 +1,24 @@
 # mdgreet configuration example
 
-[theme]
+[appearance]
+# The greeting message displayed above the avatar on the login card
+# Default: "Welcome!"
+label = "Welcome!"
+
+[appearance.theme]
 # Built-in themes: "purple" (default), "slint", "red", "green"
 # Use "custom" to load from material-theme.json
+# Use "auto" to generate theme from wallpaper colors
+# Use "seed" to generate theme from a specific HEX color
 name = "purple"
 
 # "dark" (default) or "light"
 mode = "dark"
 
-[background]
+# Primary color for theme generation (used only if name = "seed")
+# seed_color = "#1e66f5"
+
+[appearance.background]
 # Path to the background image
 # Default: "ui/images/background.png"
 path = "ui/images/background.png"
@@ -16,3 +26,11 @@ path = "ui/images/background.png"
 # Blur intensity (sigma value for Gaussian blur)
 # Set to 0.0 to disable blur. Default: 10.0
 blur = 10.0
+
+[power]
+# Custom commands for power management
+# Default commands use systemctl
+shutdown = "systemctl poweroff"
+reboot = "systemctl reboot"
+sleep = "systemctl suspend"
+hibernate = "systemctl hibernate"
