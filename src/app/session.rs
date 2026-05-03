@@ -1,5 +1,5 @@
 use crate::GreeterWindow;
-use crate::utils::systems;
+use crate::utils::system::SystemSession;
 use slint::{ComponentHandle, Image, SharedString, VecModel};
 use std::path::Path;
 use std::rc::Rc;
@@ -8,7 +8,7 @@ pub struct Session;
 
 impl Session {
     pub fn init(ui: &GreeterWindow, _demo: bool) {
-        let system_sessions = systems::get_sessions();
+        let system_sessions = SystemSession::all();
 
         if system_sessions.is_empty() {
             println!("systems: WARNING: No sessions discovered in the system!");
@@ -38,9 +38,7 @@ impl Session {
         });
     }
 
-    fn convert_system_sessions(
-        system_sessions: Vec<systems::SystemSession>,
-    ) -> Vec<crate::Compositor> {
+    fn convert_system_sessions(system_sessions: Vec<SystemSession>) -> Vec<crate::Compositor> {
         system_sessions
             .into_iter()
             .map(|s| crate::Compositor {

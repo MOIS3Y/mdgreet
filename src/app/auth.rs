@@ -1,5 +1,5 @@
 use crate::GreeterWindow;
-use crate::utils::systems::{self, SystemUser};
+use crate::utils::system::SystemUser;
 use slint::{Image, SharedString, VecModel};
 use std::path::Path;
 use std::rc::Rc;
@@ -17,7 +17,7 @@ pub struct Auth;
 
 impl Auth {
     pub async fn init(ui: &GreeterWindow, _demo: bool) -> Vec<UserData> {
-        let system_users = systems::get_users().await.unwrap_or_else(|e| {
+        let system_users = SystemUser::all().await.unwrap_or_else(|e| {
             eprintln!("systems: info: AccountsService not available ({:?})", e);
             Vec::new()
         });
@@ -27,10 +27,7 @@ impl Auth {
         if users_data.is_empty() {
             println!("systems: WARNING: No users discovered in the system!");
         } else {
-            println!(
-                "systems: loaded {} users from AccountsService",
-                users_data.len()
-            );
+            println!("systems: loaded {} users", users_data.len());
         }
 
         let (users_model, user_menu_model) = Self::prepare_ui_models(&users_data);
