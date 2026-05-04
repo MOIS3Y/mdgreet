@@ -3,6 +3,7 @@ use crate::utils::system::SystemSession;
 use slint::{ComponentHandle, Image, SharedString, VecModel};
 use std::path::Path;
 use std::rc::Rc;
+use tracing::{info, warn};
 
 pub struct Session;
 
@@ -11,14 +12,11 @@ impl Session {
         let system_sessions = SystemSession::all();
 
         if system_sessions.is_empty() {
-            println!("systems: WARNING: No sessions discovered in the system!");
+            warn!("No sessions discovered in the system!");
         } else {
-            println!(
-                "systems: discovered {} real sessions:",
-                system_sessions.len()
-            );
+            info!("Discovered {} real sessions:", system_sessions.len());
             for s in &system_sessions {
-                println!("  - {} ({})", s.name, s.exec);
+                info!("  - {} ({})", s.name, s.exec);
             }
         }
 
@@ -33,7 +31,7 @@ impl Session {
         let ui_handle = ui.as_weak();
         ui.on_compositor_selected(move |idx| {
             if let Some(_ui) = ui_handle.upgrade() {
-                println!("Compositor selected at index {}", idx);
+                info!("Compositor selected at index {}", idx);
             }
         });
     }

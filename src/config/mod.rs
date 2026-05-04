@@ -1,5 +1,6 @@
 pub mod appearance;
 pub mod background;
+pub mod logging;
 pub mod power;
 pub mod theme;
 
@@ -10,7 +11,10 @@ use figment::{
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
+use tracing::warn;
+
 pub use appearance::AppearanceConfig;
+pub use logging::LoggingConfig;
 pub use power::PowerConfig;
 
 /// The name for this greeter
@@ -25,6 +29,8 @@ pub struct GreeterConfig {
     pub appearance: AppearanceConfig,
     #[serde(default)]
     pub power: PowerConfig,
+    #[serde(default)]
+    pub logging: LoggingConfig,
 }
 
 impl GreeterConfig {
@@ -44,8 +50,8 @@ impl GreeterConfig {
             .merge(Env::prefixed("MDGREET_"))
             .extract()
             .unwrap_or_else(|e| {
-                eprintln!("config: failed to load (path: {:?}): {}", path, e);
-                eprintln!("config: using defaults");
+                warn!("Failed to load (path: {:?}): {}", path, e);
+                warn!("Using defaults");
                 GreeterConfig::default()
             })
     }

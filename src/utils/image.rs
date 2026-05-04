@@ -6,6 +6,7 @@ use material_colors::quantize::QuantizerCelebi;
 use material_colors::score::Score;
 use std::fs;
 use std::path::{Path, PathBuf};
+use tracing::info;
 
 pub fn prepare_background(original_path: &str, blur_sigma: f32) -> Result<PathBuf> {
     let original = Path::new(original_path);
@@ -36,7 +37,7 @@ pub fn prepare_background(original_path: &str, blur_sigma: f32) -> Result<PathBu
     };
 
     if needs_update {
-        println!(
+        info!(
             "Processing background image: {} (blur: {})",
             original_path, blur_sigma
         );
@@ -60,7 +61,7 @@ pub fn prepare_background(original_path: &str, blur_sigma: f32) -> Result<PathBu
         processed
             .save(&cache_path)
             .context("Failed to save blurred image to cache")?;
-        println!("Background processed and saved to {:?}", cache_path);
+        info!("Background processed and saved to {:?}", cache_path);
     }
 
     Ok(cache_path)

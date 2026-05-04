@@ -9,17 +9,21 @@ use cli::Args;
 use config::GreeterConfig;
 use slint::{ComponentHandle, Model, SharedString};
 use std::sync::{Arc, Mutex};
+use tracing::info;
 
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
-    let ui = GreeterWindow::new().unwrap();
-
     let config = GreeterConfig::load(&args.config);
+
+    // Initialize logging
+    utils::logging::init(&config.logging);
+
+    let ui = GreeterWindow::new().unwrap();
     let is_dark = config.is_dark_mode();
 
     if args.demo {
-        println!("*** RUNNING IN DEMO MODE ***");
+        info!("*** RUNNING IN DEMO MODE ***");
     }
 
     let cache = Arc::new(Mutex::new(utils::cache::Cache::load()));
@@ -105,7 +109,7 @@ async fn main() {
 
         match user_data {
             Some(data) => {
-                println!("Login attempt for '{}'!", data.user_name);
+                info!("Login attempt for '{}'!", data.user_name);
 
                 let current_comp_idx = ui.get_selected_compositor_index();
                 if let Some(comp) = ui.get_compositors().row_data(current_comp_idx as usize) {
@@ -118,7 +122,7 @@ async fn main() {
                 slint::quit_event_loop().unwrap();
             }
             None => {
-                println!("Manual login attempt for '{}'!", username_or_login);
+                info!("Manual login attempt for '{}'!", username_or_login);
                 slint::quit_event_loop().unwrap();
             }
         }

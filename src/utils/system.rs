@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use pwd::Passwd;
 use std::fs;
+use tracing::{info, warn};
 use zbus::{Connection, proxy, zvariant::OwnedObjectPath};
 
 #[proxy(
@@ -39,16 +40,16 @@ impl SystemUser {
         // 1. Try D-Bus (AccountsService) first as it has better metadata
         match Self::from_dbus().await {
             Ok(users) if !users.is_empty() => {
-                println!("systems: found {} users via D-Bus", users.len());
+                info!("Found {} users via D-Bus", users.len());
                 return Ok(users);
             }
-            Ok(_) => println!("systems: D-Bus returned empty user list, falling back to passwd"),
-            Err(e) => println!("systems: D-Bus error: {:?}, falling back to passwd", e),
+            Ok(_) => warn!("D-Bus returned empty user list, falling back to passwd"),
+            Err(e) => warn!("D-Bus error: {:?}, falling back to passwd", e),
         }
 
         // 2. Fallback to /etc/passwd using the pwd crate
         let users = Self::from_passwd();
-        println!("systems: found {} users via /etc/passwd", users.len());
+        info!("Found {} users via /etc/passwd", users.len());
         Ok(users)
     }
 

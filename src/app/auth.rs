@@ -3,6 +3,7 @@ use crate::utils::system::SystemUser;
 use slint::{Image, SharedString, VecModel};
 use std::path::Path;
 use std::rc::Rc;
+use tracing::{error, info, warn};
 
 // Structural mirror for Rust backend data
 #[derive(Clone)]
@@ -18,16 +19,16 @@ pub struct Auth;
 impl Auth {
     pub async fn init(ui: &GreeterWindow, _demo: bool) -> Vec<UserData> {
         let system_users = SystemUser::all().await.unwrap_or_else(|e| {
-            eprintln!("systems: info: AccountsService not available ({:?})", e);
+            error!("AccountsService not available ({:?})", e);
             Vec::new()
         });
 
         let users_data = Self::convert_system_users(system_users);
 
         if users_data.is_empty() {
-            println!("systems: WARNING: No users discovered in the system!");
+            warn!("No users discovered in the system!");
         } else {
-            println!("systems: loaded {} users", users_data.len());
+            info!("Loaded {} users", users_data.len());
         }
 
         let (users_model, user_menu_model) = Self::prepare_ui_models(&users_data);

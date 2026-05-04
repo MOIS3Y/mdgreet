@@ -7,6 +7,7 @@ use slint::{ComponentHandle, Image};
 use std::fs;
 use std::path::Path;
 use std::time::UNIX_EPOCH;
+use tracing::{info, warn};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) struct MaterialScheme {
@@ -221,18 +222,18 @@ impl Appearance {
                 if let Some(path) = &config.background.path {
                     if Path::new(path).exists() {
                         Self::get_dynamic_theme(config).unwrap_or_else(|| {
-                            eprintln!("theme: warning: failed to generate auto theme. Falling back to default.");
+                            warn!("Failed to generate auto theme. Falling back to default.");
                             Self::load_builtin_theme("default").unwrap()
                         })
                     } else {
-                        eprintln!(
-                            "theme: warning: auto mode requires a valid background image. Falling back to default."
+                        warn!(
+                            "Auto mode requires a valid background image. Falling back to default."
                         );
                         Self::load_builtin_theme("default").unwrap()
                     }
                 } else {
-                    eprintln!(
-                        "theme: warning: auto mode requires a valid background image path. Falling back to default."
+                    warn!(
+                        "Auto mode requires a valid background image path. Falling back to default."
                     );
                     Self::load_builtin_theme("default").unwrap()
                 }
@@ -240,13 +241,11 @@ impl Appearance {
             "seed" => {
                 if config.theme.seed_color.is_some() {
                     Self::get_dynamic_theme(config).unwrap_or_else(|| {
-                        eprintln!("theme: warning: failed to generate seed theme. Falling back to default.");
+                        warn!("Failed to generate seed theme. Falling back to default.");
                         Self::load_builtin_theme("default").unwrap()
                     })
                 } else {
-                    eprintln!(
-                        "theme: warning: seed mode requires seed_color to be set. Falling back to default."
-                    );
+                    warn!("Seed mode requires seed_color to be set. Falling back to default.");
                     Self::load_builtin_theme("default").unwrap()
                 }
             }
@@ -344,10 +343,7 @@ impl Appearance {
             }
         }
 
-        println!(
-            "theme: generating dynamic theme (mode: {})",
-            current_meta.mode
-        );
+        info!("Generating dynamic theme (mode: {})", current_meta.mode);
 
         let argb = if current_meta.mode == "seed" {
             if let Ok(c) = current_meta.seed_color.parse::<css_color_parser2::Color>() {
