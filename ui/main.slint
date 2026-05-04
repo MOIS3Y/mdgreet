@@ -37,6 +37,7 @@ export struct UserData {
 export component GreeterWindow inherits MaterialWindow {
     in property <image> background-original;
     in property <image> background-blurred;
+    in property <color> background-fallback-color;
     in property <string> hours: "00";
     in property <string> minutes: "00";
     in property <string> date: "";
@@ -72,6 +73,7 @@ export component GreeterWindow inherits MaterialWindow {
     Background {
         original: root.background-original;
         blurred: root.background-blurred;
+        fallback-color: root.background-fallback-color;
         show-login: root.show-login;
     }
 
@@ -98,7 +100,7 @@ export component GreeterWindow inherits MaterialWindow {
             MaterialText {
                 text: "Press any key to unlock";
                 style: MaterialTypography.body-large;
-                color: white.with-alpha(0.5);
+                color: MaterialPalette.on-background.with-alpha(0.5);
                 horizontal-alignment: center;
             }
         }

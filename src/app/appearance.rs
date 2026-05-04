@@ -201,35 +201,13 @@ fn argb_to_hex(argb: Argb) -> String {
     format!("#{:02x}{:02x}{:02x}", argb.red, argb.green, argb.blue)
 }
 
-const SLINT_THEME: &str = include_str!("../../ui/themes/slint.json");
-const PURPLE_THEME: &str = include_str!("../../ui/themes/purple.json");
-const RED_THEME: &str = include_str!("../../ui/themes/red.json");
-const GREEN_THEME: &str = include_str!("../../ui/themes/green.json");
+const DEFAULT_THEME: &str = include_str!("../../ui/themes/default.json");
 
 pub struct Appearance;
 
 impl Appearance {
     pub fn init(ui: &crate::GreeterWindow, config: &crate::config::AppearanceConfig) {
-        // 1. Initialize Background
-        let bg_config = &config.background;
-        let wallpaper_path = bg_config
-            .path
-            .as_deref()
-            .unwrap_or("ui/images/background.png");
-        let blur_sigma = bg_config.blur.unwrap_or(10.0);
-
-        let original =
-            Image::load_from_path(Path::new(wallpaper_path)).unwrap_or_else(|_| Image::default());
-
-        let blurred = match utils::image::prepare_background(wallpaper_path, blur_sigma) {
-            Ok(path) => Image::load_from_path(&path).unwrap_or_else(|_| Image::default()),
-            Err(_) => Image::default(),
-        };
-
-        ui.set_background_original(original);
-        ui.set_background_blurred(blurred);
-
-        // 2. Initialize Theme
+        // 1. Initialize Theme
         let theme_name = &config.theme.name;
         let theme = match theme_name.as_str() {
             "custom" => {
@@ -237,11 +215,43 @@ impl Appearance {
                     std::env::var("MDGREET_CONFIG_DIR").unwrap_or_else(|_| ".".to_string());
                 let theme_path = format!("{}/material-theme.json", config_dir);
                 Self::load_custom_theme(&theme_path)
-                    .unwrap_or_else(|_| Self::load_builtin_theme("purple").unwrap())
+                    .unwrap_or_else(|_| Self::load_builtin_theme("default").unwrap())
             }
-            "auto" | "seed" => Self::get_dynamic_theme(config),
+            "auto" => {
+                if let Some(path) = &config.background.path {
+                    if Path::new(path).exists() {
+                        Self::get_dynamic_theme(config).unwrap_or_else(|| {
+                            eprintln!("theme: warning: failed to generate auto theme. Falling back to default.");
+                            Self::load_builtin_theme("default").unwrap()
+                        })
+                    } else {
+                        eprintln!(
+                            "theme: warning: auto mode requires a valid background image. Falling back to default."
+                        );
+                        Self::load_builtin_theme("default").unwrap()
+                    }
+                } else {
+                    eprintln!(
+                        "theme: warning: auto mode requires a valid background image path. Falling back to default."
+                    );
+                    Self::load_builtin_theme("default").unwrap()
+                }
+            }
+            "seed" => {
+                if config.theme.seed_color.is_some() {
+                    Self::get_dynamic_theme(config).unwrap_or_else(|| {
+                        eprintln!("theme: warning: failed to generate seed theme. Falling back to default.");
+                        Self::load_builtin_theme("default").unwrap()
+                    })
+                } else {
+                    eprintln!(
+                        "theme: warning: seed mode requires seed_color to be set. Falling back to default."
+                    );
+                    Self::load_builtin_theme("default").unwrap()
+                }
+            }
             name => Self::load_builtin_theme(name)
-                .unwrap_or_else(|| Self::load_builtin_theme("purple").unwrap()),
+                .unwrap_or_else(|| Self::load_builtin_theme("default").unwrap()),
         };
 
         Self::apply(ui, &theme);
@@ -249,24 +259,61 @@ impl Appearance {
         if let Some(label) = &config.label {
             ui.set_greeting_msg(slint::SharedString::from(label));
         }
+
+        // 2. Initialize Background
+        let bg_config = &config.background;
+
+        let fallback_color = if let Some(hex) = &bg_config.color {
+            string_to_color(hex.clone())
+        } else {
+            // Default to theme background
+            let bg_hex = if config.theme.mode.as_deref() == Some("light") {
+                &theme.schemes.light.background
+            } else {
+                &theme.schemes.dark.background
+            };
+            string_to_color(bg_hex.clone())
+        };
+
+        // Pass color to UI
+        ui.set_background_fallback_color(fallback_color);
+
+        if let Some(wallpaper_path) = &bg_config.path {
+            let blur_sigma = bg_config.blur.unwrap_or(10.0);
+
+            let original = Image::load_from_path(Path::new(wallpaper_path))
+                .unwrap_or_else(|_| Image::default());
+
+            let blurred = match utils::image::prepare_background(wallpaper_path, blur_sigma) {
+                Ok(path) => Image::load_from_path(&path).unwrap_or_else(|_| Image::default()),
+                Err(_) => Image::default(),
+            };
+
+            ui.set_background_original(original);
+            ui.set_background_blurred(blurred);
+        } else {
+            ui.set_background_original(Image::default());
+            ui.set_background_blurred(Image::default());
+        }
     }
 
-    fn get_dynamic_theme(config: &crate::config::AppearanceConfig) -> MaterialTheme {
+    fn get_dynamic_theme(config: &crate::config::AppearanceConfig) -> Option<MaterialTheme> {
         let cache_dir = utils::cache::get_cache_dir();
         let theme_path = cache_dir.join("generated_theme.json");
         let meta_path = cache_dir.join("generated_theme.toml");
 
-        let wallpaper_path = config
-            .background
-            .path
-            .as_deref()
-            .unwrap_or("ui/images/background.png");
-        let wallpaper_mtime = fs::metadata(wallpaper_path)
-            .and_then(|m| m.modified())
-            .unwrap_or(UNIX_EPOCH)
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_secs();
+        let wallpaper_path = config.background.path.as_deref().unwrap_or("");
+
+        let wallpaper_mtime = if !wallpaper_path.is_empty() {
+            fs::metadata(wallpaper_path)
+                .and_then(|m| m.modified())
+                .unwrap_or(UNIX_EPOCH)
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs()
+        } else {
+            0
+        };
 
         let current_meta = ThemeMetadata {
             mode: config.theme.name.clone(),
@@ -275,7 +322,6 @@ impl Appearance {
             seed_color: config.theme.seed_color.clone().unwrap_or_default(),
         };
 
-        // Check if cache is valid
         let is_valid = if meta_path.exists() && theme_path.exists() {
             if let Ok(meta_content) = fs::read_to_string(&meta_path) {
                 if let Ok(cached_meta) = toml::from_str::<ThemeMetadata>(&meta_content) {
@@ -293,12 +339,11 @@ impl Appearance {
         if is_valid {
             if let Ok(theme_content) = fs::read_to_string(&theme_path) {
                 if let Ok(theme) = serde_json::from_str(&theme_content) {
-                    return theme;
+                    return Some(theme);
                 }
             }
         }
 
-        // Cache invalid or missing, regenerate
         println!(
             "theme: generating dynamic theme (mode: {})",
             current_meta.mode
@@ -308,18 +353,21 @@ impl Appearance {
             if let Ok(c) = current_meta.seed_color.parse::<css_color_parser2::Color>() {
                 Argb::new((c.a * 255.) as u8, c.r, c.g, c.b)
             } else {
-                Argb::new(255, 68, 94, 145)
+                return None;
             }
         } else {
-            match utils::image::extract_seed_color(wallpaper_path) {
-                Ok([r, g, b, a]) => Argb::new(a, r, g, b),
-                Err(_) => Argb::new(255, 68, 94, 145),
+            if !wallpaper_path.is_empty() {
+                match utils::image::extract_seed_color(wallpaper_path) {
+                    Ok([r, g, b, a]) => Argb::new(a, r, g, b),
+                    Err(_) => return None,
+                }
+            } else {
+                return None;
             }
         };
 
         let theme = Self::generate_from_seed(argb);
 
-        // Save to cache
         if let Ok(theme_json) = serde_json::to_string_pretty(&theme) {
             let _ = fs::create_dir_all(&cache_dir);
             let _ = fs::write(&theme_path, theme_json);
@@ -328,7 +376,7 @@ impl Appearance {
             }
         }
 
-        theme
+        Some(theme)
     }
 
     fn generate_from_seed(seed: Argb) -> MaterialTheme {
@@ -379,35 +427,32 @@ impl Appearance {
             secondary_fixed: argb_to_hex(s.secondary),
             on_secondary_fixed: argb_to_hex(s.on_secondary),
             secondary_fixed_dim: argb_to_hex(s.secondary),
-            on_secondary_fixed_variant: argb_to_hex(s.on_secondary),
+            on_secondary_fixed_variant: argb_to_hex(s.on_secondary_fixed_variant),
             tertiary_fixed: argb_to_hex(s.tertiary),
             on_tertiary_fixed: argb_to_hex(s.on_tertiary),
             tertiary_fixed_dim: argb_to_hex(s.tertiary),
-            on_tertiary_fixed_variant: argb_to_hex(s.on_tertiary),
+            on_tertiary_fixed_variant: argb_to_hex(s.on_tertiary_fixed_variant),
             surface_dim: argb_to_hex(s.surface),
-            surface_bright: argb_to_hex(s.surface),
-            surface_container_lowest: argb_to_hex(s.surface),
-            surface_container_low: argb_to_hex(s.surface),
-            surface_container: argb_to_hex(s.surface),
-            surface_container_high: argb_to_hex(s.surface),
-            surface_container_highest: argb_to_hex(s.surface),
+            surface_bright: argb_to_hex(s.surface_bright),
+            surface_container_lowest: argb_to_hex(s.surface_container_lowest),
+            surface_container_low: argb_to_hex(s.surface_container_low),
+            surface_container: argb_to_hex(s.surface_container),
+            surface_container_high: argb_to_hex(s.surface_container_high),
+            surface_container_highest: argb_to_hex(s.surface_container_highest),
         }
     }
 
     pub fn load_builtin_theme(name: &str) -> Option<MaterialTheme> {
         let json = match name {
-            "slint" => SLINT_THEME,
-            "purple" => PURPLE_THEME,
-            "red" => RED_THEME,
-            "green" => GREEN_THEME,
+            "default" | "slint" => DEFAULT_THEME,
             _ => return None,
         };
         serde_json::from_str(json).ok()
     }
 
     pub fn load_custom_theme(path: &str) -> Result<MaterialTheme> {
-        let content = std::fs::read_to_string(path)
-            .with_context(|| format!("theme: failed to read: {}", path))?;
+        let content =
+            fs::read_to_string(path).with_context(|| format!("theme: failed to read: {}", path))?;
         serde_json::from_str(&content).context("theme: failed to parse JSON")
     }
 

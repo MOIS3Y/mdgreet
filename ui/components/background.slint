@@ -1,6 +1,7 @@
 export component Background {
     in property <image> original;
     in property <image> blurred;
+    in property <color> fallback-color;
     in property <bool> show-login: false;
 
     // Ensure the component itself occupies the full space of the window
@@ -10,9 +11,10 @@ export component Background {
     Rectangle {
         width: 100%;
         height: 100%;
+        background: root.fallback-color;
 
         // Original Background
-        Image {
+        if (root.original.width > 0): Image {
             source: root.original;
             width: 100%;
             height: 100%;
@@ -22,7 +24,7 @@ export component Background {
         }
 
         // Blurred Background (fades in)
-        Image {
+        if (root.blurred.width > 0): Image {
             source: root.blurred;
             width: 100%;
             height: 100%;

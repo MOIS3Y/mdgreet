@@ -26,7 +26,7 @@ export component Clock {
                 font-size: 200px;
                 font-weight: 500;
                 font-family: "FlexRounded";
-                color: MaterialPalette.primary-container;
+                color: MaterialPalette.secondary;
                 horizontal-alignment: center;
                 letter-spacing: -5px;
             }
@@ -40,7 +40,7 @@ export component Clock {
         MaterialText {
             text: root.date;
             style: MaterialTypography.headline-small;
-            color: white.with-alpha(0.8);
+            color: MaterialPalette.on-background.with-alpha(0.8);
             horizontal-alignment: center;
         }
     }
