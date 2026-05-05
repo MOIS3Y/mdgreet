@@ -2981,6 +2981,7 @@ dependencies = [
  "rustix 1.1.4",
  "serde",
  "serde_json",
+ "shlex",
  "slint",
  "slint-build",
  "tokio",

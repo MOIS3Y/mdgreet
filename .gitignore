@@ -7,7 +7,7 @@ ui/**/*.rs
 # Cache and local development
 .cache/
 .mdgreet.toml
-material-theme.json
+.material-theme.json
 
 # IDEs
 .idea/
@@ -18,3 +18,5 @@ material-theme.json
 # Nix
 result
 .direnv/
+vm-result
+mdgreet-test-vm.qcow2

@@ -207,19 +207,24 @@ const DEFAULT_THEME: &str = include_str!("../../ui/themes/default.json");
 pub struct Appearance;
 
 impl Appearance {
-    pub fn init(ui: &crate::GreeterWindow, config: &crate::config::AppearanceConfig) {
+    pub fn init(ui: &crate::GreeterWindow, config: &crate::config::GreeterConfig) {
+        let app_config = &config.appearance;
         // 1. Initialize Theme
-        let theme_name = &config.theme.name;
+        let theme_name = &app_config.theme.name;
         let theme = match theme_name.as_str() {
             "custom" => {
-                let config_dir =
-                    std::env::var("MDGREET_CONFIG_DIR").unwrap_or_else(|_| ".".to_string());
-                let theme_path = format!("{}/material-theme.json", config_dir);
-                Self::load_custom_theme(&theme_path)
-                    .unwrap_or_else(|_| Self::load_builtin_theme("default").unwrap())
+                if let Some(theme_path) = &app_config.theme.path {
+                    Self::load_custom_theme(&theme_path.to_string_lossy())
+                        .unwrap_or_else(|_| Self::load_builtin_theme("default").unwrap())
+                } else {
+                    warn!(
+                        "Custom theme mode requires a valid theme path. Falling back to default."
+                    );
+                    Self::load_builtin_theme("default").unwrap()
+                }
             }
             "auto" => {
-                if let Some(path) = &config.background.path {
+                if let Some(path) = &app_config.background.path {
                     if Path::new(path).exists() {
                         Self::get_dynamic_theme(config).unwrap_or_else(|| {
                             warn!("Failed to generate auto theme. Falling back to default.");
@@ -239,7 +244,7 @@ impl Appearance {
                 }
             }
             "seed" => {
-                if config.theme.seed_color.is_some() {
+                if app_config.theme.seed_color.is_some() {
                     Self::get_dynamic_theme(config).unwrap_or_else(|| {
                         warn!("Failed to generate seed theme. Falling back to default.");
                         Self::load_builtin_theme("default").unwrap()
@@ -255,18 +260,18 @@ impl Appearance {
 
         Self::apply(ui, &theme);
 
-        if let Some(label) = &config.label {
+        if let Some(label) = &app_config.label {
             ui.set_greeting_msg(slint::SharedString::from(label));
         }
 
         // 2. Initialize Background
-        let bg_config = &config.background;
+        let bg_config = &app_config.background;
 
         let fallback_color = if let Some(hex) = &bg_config.color {
             string_to_color(hex.clone())
         } else {
             // Default to theme background
-            let bg_hex = if config.theme.mode.as_deref() == Some("light") {
+            let bg_hex = if app_config.theme.mode.as_deref() == Some("light") {
                 &theme.schemes.light.background
             } else {
                 &theme.schemes.dark.background
@@ -283,7 +288,8 @@ impl Appearance {
             let original = Image::load_from_path(Path::new(wallpaper_path))
                 .unwrap_or_else(|_| Image::default());
 
-            let blurred = match utils::image::prepare_background(wallpaper_path, blur_sigma) {
+            let blurred = match utils::image::prepare_background(config, wallpaper_path, blur_sigma)
+            {
                 Ok(path) => Image::load_from_path(&path).unwrap_or_else(|_| Image::default()),
                 Err(_) => Image::default(),
             };
@@ -296,12 +302,12 @@ impl Appearance {
         }
     }
 
-    fn get_dynamic_theme(config: &crate::config::AppearanceConfig) -> Option<MaterialTheme> {
-        let cache_dir = utils::cache::get_cache_dir();
+    fn get_dynamic_theme(config: &crate::config::GreeterConfig) -> Option<MaterialTheme> {
+        let cache_dir = utils::cache::get_cache_dir(config);
         let theme_path = cache_dir.join("generated_theme.json");
         let meta_path = cache_dir.join("generated_theme.toml");
 
-        let wallpaper_path = config.background.path.as_deref().unwrap_or("");
+        let wallpaper_path = config.appearance.background.path.as_deref().unwrap_or("");
 
         let wallpaper_mtime = if !wallpaper_path.is_empty() {
             fs::metadata(wallpaper_path)
@@ -315,10 +321,15 @@ impl Appearance {
         };
 
         let current_meta = ThemeMetadata {
-            mode: config.theme.name.clone(),
+            mode: config.appearance.theme.name.clone(),
             wallpaper_path: wallpaper_path.to_string(),
             wallpaper_mtime,
-            seed_color: config.theme.seed_color.clone().unwrap_or_default(),
+            seed_color: config
+                .appearance
+                .theme
+                .seed_color
+                .clone()
+                .unwrap_or_default(),
         };
 
         let is_valid = if meta_path.exists() && theme_path.exists() {

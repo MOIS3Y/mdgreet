@@ -26,13 +26,13 @@ async fn main() {
         info!("*** RUNNING IN DEMO MODE ***");
     }
 
-    let cache = Arc::new(Mutex::new(utils::cache::Cache::load()));
+    let cache = Arc::new(Mutex::new(utils::cache::Cache::load(&config)));
 
     // Initialize modules
     let users_data = app::Auth::init(&ui, args.demo).await;
     app::Session::init(&ui, args.demo);
     app::Power::init(&ui, &config.power);
-    app::Appearance::init(&ui, &config.appearance);
+    app::Appearance::init(&ui, &config);
     let _clock_timer = app::Clock::init(&ui);
 
     // Restore Initial State from Cache (LRU)
@@ -95,37 +95,115 @@ async fn main() {
     let ui_handle = ui.as_weak();
     let users_data_login = users_data.clone();
     let cache_login = cache.clone();
+    let demo_mode = args.demo;
 
-    ui.on_login(move |username_or_login, _password| {
-        let ui = ui_handle.unwrap();
-        if username_or_login.is_empty() {
-            ui.set_auth_error(SharedString::from("Please select a user"));
-            return;
-        }
+    ui.on_login(move |username_or_login, password| {
+        let ui_weak = ui_handle.clone();
+        let users_data_login = users_data_login.clone();
+        let cache_login = cache_login.clone();
+        let username_or_login = username_or_login.to_string();
+        let password = password.to_string();
 
-        let user_data = users_data_login
-            .iter()
-            .find(|u| u.user_name == username_or_login || u.real_name == username_or_login);
-
-        match user_data {
-            Some(data) => {
-                info!("Login attempt for '{}'!", data.user_name);
-
-                let current_comp_idx = ui.get_selected_compositor_index();
-                if let Some(comp) = ui.get_compositors().row_data(current_comp_idx as usize) {
-                    let mut cache = cache_login.lock().unwrap();
-                    cache.set_last_user(data.user_name.to_string());
-                    cache.set_last_session(data.user_name.to_string(), comp.name.to_string());
-                    cache.save();
-                }
-
-                slint::quit_event_loop().unwrap();
+        let _ = slint::spawn_local(async move {
+            let ui = ui_weak.unwrap();
+            if username_or_login.is_empty() {
+                ui.set_auth_error(SharedString::from("Please select a user"));
+                return;
             }
-            None => {
-                info!("Manual login attempt for '{}'!", username_or_login);
-                slint::quit_event_loop().unwrap();
+
+            let user_data = users_data_login
+                .iter()
+                .find(|u| u.user_name == username_or_login || u.real_name == username_or_login);
+
+            let actual_username = match user_data {
+                Some(data) => data.user_name.to_string(),
+                None => username_or_login.clone(),
+            };
+
+            info!("Login attempt for '{}'!", actual_username);
+
+            let current_comp_idx = ui.get_selected_compositor_index();
+            let mut comp_name = String::new();
+            let mut comp_exec = String::new();
+            if let Some(comp) = ui.get_compositors().row_data(current_comp_idx as usize) {
+                comp_name = comp.name.to_string();
+                comp_exec = comp.exec.to_string();
             }
-        }
+
+            if comp_exec.is_empty() {
+                ui.set_auth_error(SharedString::from("Please select a session"));
+                return;
+            }
+
+            // Greetd Interaction
+            match crate::utils::client::GreetdClient::new(demo_mode).await {
+                Ok(mut client) => match client.create_session(&actual_username).await {
+                    Ok(_) => {
+                        let status = client.get_auth_status().clone();
+                        if status == crate::utils::client::AuthStatus::InProgress {
+                            match client.send_auth_response(Some(password)).await {
+                                Ok(_) => {
+                                    if *client.get_auth_status()
+                                        == crate::utils::client::AuthStatus::Done
+                                    {
+                                        let cmd: Vec<String> = shlex::split(&comp_exec)
+                                            .unwrap_or_else(|| vec![comp_exec.clone()]);
+                                        let env = vec![];
+                                        match client.start_session(cmd, env).await {
+                                            Ok(_) => {
+                                                let mut cache = cache_login.lock().unwrap();
+                                                cache.set_last_user(actual_username.clone());
+                                                cache.set_last_session(actual_username, comp_name);
+                                                cache.save();
+                                                info!("Session started successfully. Exiting.");
+                                                slint::quit_event_loop().unwrap();
+                                            }
+                                            Err(e) => ui.set_auth_error(SharedString::from(
+                                                format!("Failed to start session: {}", e),
+                                            )),
+                                        }
+                                    } else {
+                                        ui.set_auth_error(SharedString::from(
+                                            "Authentication failed",
+                                        ));
+                                    }
+                                }
+                                Err(e) => ui.set_auth_error(SharedString::from(format!(
+                                    "Auth error: {}",
+                                    e
+                                ))),
+                            }
+                        } else if status == crate::utils::client::AuthStatus::Done {
+                            let cmd: Vec<String> =
+                                shlex::split(&comp_exec).unwrap_or_else(|| vec![comp_exec.clone()]);
+                            let env = vec![];
+                            match client.start_session(cmd, env).await {
+                                Ok(_) => {
+                                    let mut cache = cache_login.lock().unwrap();
+                                    cache.set_last_user(actual_username.clone());
+                                    cache.set_last_session(actual_username, comp_name);
+                                    cache.save();
+                                    info!("Session started successfully. Exiting.");
+                                    slint::quit_event_loop().unwrap();
+                                }
+                                Err(e) => ui.set_auth_error(SharedString::from(format!(
+                                    "Failed to start session: {}",
+                                    e
+                                ))),
+                            }
+                        } else {
+                            ui.set_auth_error(SharedString::from(
+                                "Failed to initialize authentication",
+                            ));
+                        }
+                    }
+                    Err(e) => {
+                        ui.set_auth_error(SharedString::from(format!("Session error: {}", e)))
+                    }
+                },
+                Err(e) => ui.set_auth_error(SharedString::from(format!("Client error: {}", e))),
+            }
+        });
     });
 
     ui.run().unwrap();

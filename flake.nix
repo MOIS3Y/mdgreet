@@ -1,5 +1,5 @@
 {
-  description = "greetd greeter";
+  description = "A clean MD3 greetd greeter in Rust/Slint with dynamic colors";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -15,12 +15,33 @@
     flake-utils.lib.eachDefaultSystem (
       system:
       let
+        # nixpkgs aliases
         pkgs = nixpkgs.legacyPackages.${system};
         lib = pkgs.lib;
 
+        # package meta
         cargoToml = fromTOML (builtins.readFile ./Cargo.toml);
         pname = cargoToml.package.name;
         version = cargoToml.package.version;
+
+        # runtime deps
+        waylandDependencies = with pkgs; [
+          wayland
+          wayland-protocols
+          libxkbcommon
+          mesa
+          libGL
+          fontconfig
+          freetype
+        ];
+
+        # LD lib paths
+        wlLibs = lib.makeLibraryPath waylandDependencies;
+
+        # dev test VM
+        vmConfig = self.nixosConfigurations.vm.config;
+        vmBuildDir = vmConfig.system.build.vm;
+        vmHostName = vmConfig.networking.hostName;
       in
       {
         packages.default = pkgs.rustPlatform.buildRustPackage {
@@ -34,27 +55,30 @@
 
           nativeBuildInputs = [
             pkgs.pkg-config
+            pkgs.makeWrapper
           ];
 
-          buildInputs = [
-            pkgs.fontconfig
-            pkgs.freetype
-            pkgs.wayland
-            pkgs.wayland-protocols
-            pkgs.libxkbcommon
-            pkgs.mesa
-            pkgs.libGL
-          ];
+          buildInputs = waylandDependencies;
+
+          postInstall = ''
+            wrapProgram $out/bin/${pname} --prefix LD_LIBRARY_PATH : "${wlLibs}"
+          '';
 
           meta = {
-            description = "greetd greeter";
-            license = lib.licenses.mit;
+            description = "A clean MD3 greetd greeter in Rust/Slint";
+            license = lib.licenses.gpl3Plus;
             mainProgram = pname;
           };
         };
 
-        apps.default = flake-utils.lib.mkApp {
-          drv = self.packages.${system}.default;
+        apps = {
+          default = flake-utils.lib.mkApp {
+            drv = self.packages.${system}.default;
+          };
+          vm = {
+            type = "app";
+            program = "${vmBuildDir}/bin/run-${vmHostName}-vm";
+          };
         };
 
         devShells.default = pkgs.mkShell {
@@ -74,21 +98,23 @@
 
           shellHook = ''
             # Fix kvantum error on my device
-            export QT_STYLE_OVERRIDE="Fusion";
+            export QT_STYLE_OVERRIDE="Fusion"
 
             # Fix Runtime deps in development
-            export LD_LIBRARY_PATH="${lib.makeLibraryPath [
-              pkgs.wayland
-              pkgs.wayland-protocols
-              pkgs.fontconfig
-              pkgs.freetype
-              pkgs.libxkbcommon
-              pkgs.mesa
-              pkgs.libGL
-            ]}:$LD_LIBRARY_PATH"
+            export LD_LIBRARY_PATH="${wlLibs}:$LD_LIBRARY_PATH"
           '';
         };
       }
-    );
+    )
+    // {
+      # NixOS configurations must be outside of eachDefaultSystem
+      nixosConfigurations.vm = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        specialArgs = {
+          inherit self;
+          system = "x86_64-linux";
+        };
+        modules = [ ./vm.nix ];
+      };
+    };
 }
-

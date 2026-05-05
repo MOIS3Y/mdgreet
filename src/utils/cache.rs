@@ -11,15 +11,13 @@ use std::num::NonZeroUsize;
 use std::path::PathBuf;
 
 const CACHE_LIMIT: usize = 100;
-
 /// Returns the base directory for all cache files (state, images, etc.)
-pub fn get_cache_dir() -> PathBuf {
-    let uid = rustix::process::getuid().as_raw();
-    if uid == 0 {
-        PathBuf::from(config::CACHE_DIR)
-    } else {
-        PathBuf::from(format!(".cache/{}", config::GREETER_NAME))
-    }
+pub fn get_cache_dir(config: &config::GreeterConfig) -> PathBuf {
+    config
+        .cache
+        .path
+        .clone()
+        .unwrap_or_else(|| PathBuf::from(format!("/var/cache/{}", config::GREETER_NAME)))
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -28,6 +26,8 @@ pub struct Cache {
     pub last_user: Option<String>,
     /// Maps username to their last used session (compositor name) using LRU
     pub user_to_last_sess: LruWrapper<String, String>,
+    #[serde(skip)]
+    path: PathBuf,
 }
 
 impl Default for Cache {
@@ -35,30 +35,35 @@ impl Default for Cache {
         Self {
             last_user: None,
             user_to_last_sess: LruWrapper::new(CACHE_LIMIT),
+            path: PathBuf::new(),
         }
     }
 }
-
 impl Cache {
-    pub fn load() -> Self {
-        let path = Self::get_path();
-        if path.exists() {
+    pub fn load(config: &config::GreeterConfig) -> Self {
+        let path = get_cache_dir(config).join("state.toml");
+        let mut cache = if path.exists() {
             if let Ok(content) = fs::read_to_string(&path) {
-                if let Ok(cache) = toml::from_str(&content) {
-                    return cache;
-                }
+                toml::from_str(&content).unwrap_or_default()
+            } else {
+                Self::default()
             }
-        }
-        Self::default()
+        } else {
+            Self::default()
+        };
+        cache.path = path;
+        cache
     }
 
     pub fn save(&self) {
-        let path = Self::get_path();
-        if let Some(parent) = path.parent() {
+        if self.path.as_os_str().is_empty() {
+            return;
+        }
+        if let Some(parent) = self.path.parent() {
             let _ = fs::create_dir_all(parent);
         }
         if let Ok(content) = toml::to_string_pretty(self) {
-            let _ = fs::write(path, content);
+            let _ = fs::write(&self.path, content);
         }
     }
 
@@ -72,10 +77,6 @@ impl Cache {
 
     pub fn get_last_session(&mut self, user: &str) -> Option<&String> {
         self.user_to_last_sess.get(&user.to_string())
-    }
-
-    fn get_path() -> PathBuf {
-        get_cache_dir().join("state.toml")
     }
 }
 

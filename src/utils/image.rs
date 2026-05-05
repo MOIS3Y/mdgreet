@@ -1,3 +1,4 @@
+use crate::config;
 use crate::utils;
 use anyhow::{Context, Result};
 use material_colors::color::Argb;
@@ -8,7 +9,11 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use tracing::info;
 
-pub fn prepare_background(original_path: &str, blur_sigma: f32) -> Result<PathBuf> {
+pub fn prepare_background(
+    config: &config::GreeterConfig,
+    original_path: &str,
+    blur_sigma: f32,
+) -> Result<PathBuf> {
     let original = Path::new(original_path);
     if !original.exists() {
         return Err(anyhow::anyhow!(
@@ -17,7 +22,7 @@ pub fn prepare_background(original_path: &str, blur_sigma: f32) -> Result<PathBu
         ));
     }
 
-    let cache_dir = utils::cache::get_cache_dir();
+    let cache_dir = utils::cache::get_cache_dir(config);
     if !cache_dir.exists() {
         fs::create_dir_all(&cache_dir).context("Failed to create cache directory")?;
     }
