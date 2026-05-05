@@ -6,6 +6,7 @@ ui/**/*.rs
 
 # Cache and local development
 .cache/
+.log/
 .mdgreet.toml
 .material-theme.json
 

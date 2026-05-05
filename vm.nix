@@ -71,19 +71,24 @@
     programs.niri.enable = true;
     services.accounts-daemon.enable = true;
 
-    # Ensure cache and runtime dirs exist and is owned by the greeter
+    # Ensure cache, log and runtime dirs exist and is owned by the greeter
     systemd.tmpfiles.settings."10-mdgreet" = {
-          "/var/cache/mdgreet".d = {
-            mode = "0755";
-            user = "greeter";
-            group = "greeter";
-          };
-          "/run/greetd".d = {
-            mode = "0700";
-            user = "greeter";
-            group = "greeter";
-          };
-        };
+      "/var/cache/mdgreet".d = {
+        mode = "0755";
+        user = "greeter";
+        group = "greeter";
+      };
+      "/var/log/mdgreet".d = {
+        mode = "0755";
+        user = "greeter";
+        group = "greeter";
+      };
+      "/run/greetd".d = {
+        mode = "0700";
+        user = "greeter";
+        group = "greeter";
+      };
+    };
 
     services.greetd = {
       enable = true;

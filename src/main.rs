@@ -17,7 +17,7 @@ async fn main() {
     let config = GreeterConfig::load(&args.config);
 
     // Initialize logging
-    utils::logging::init(&config.logging);
+    let _log_guard = utils::logging::init(&config.logging);
 
     let ui = GreeterWindow::new().unwrap();
     let is_dark = config.is_dark_mode();

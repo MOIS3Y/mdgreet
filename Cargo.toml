@@ -2,18 +2,21 @@
 name = "mdgreet"
 version = "0.1.0"
 edition = "2024"
+description = "A clean Material Design 3 greeter for greetd in Rust and Slint"
+repository = "https://github.com/MOIS3Y/mdgreet"
+license = "GPL-3.0-or-later"
+keywords = ["greetd", "greeter", "wayland", "slint", "material-design"]
+categories = ["gui", "system::hardware"]
 
 [dependencies]
 anyhow = "1.0.102"
 chrono = "0.4.44"
 clap = { version = "4.6.0", features = ["derive"] }
-const_format = "0.2"
 css-color-parser2 = "1.0.1"
 dirs = "6.0.0"
 figment = { version = "0.11.5", package = "figment2", features = ["toml"] }
 greetd_ipc = { version = "0.10.3", features = ["tokio-codec"] }
 image = "0.25.10"
-libc = "0.2.186"
 lru = "0.18.0"
 material-colors = "0.4.2"
 pwd = "1.4.0"
@@ -25,6 +28,7 @@ slint = { version = "1.15.1", features = ["std"] }
 tokio = { version = "1.52.1", features = ["full"] }
 toml = "1.1.2"
 tracing = "0.1.44"
+tracing-appender = "0.2.5"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "local-time", "time"] }
 zbus = "5.15.0"
 

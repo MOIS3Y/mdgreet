@@ -66,12 +66,14 @@ impl Default for AppearanceConfig {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LoggingConfig {
     pub level: Option<String>,
+    pub path: Option<PathBuf>,
 }
 
 impl Default for LoggingConfig {
     fn default() -> Self {
         Self {
             level: Some("info".to_string()),
+            path: None,
         }
     }
 }
