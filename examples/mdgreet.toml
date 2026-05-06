@@ -5,12 +5,18 @@
 # Default: "Welcome!"
 label = "Welcome!"
 
+# Opacity of the login card and power menu (0.0 to 1.0)
+# Set to 1.0 to disable transparency
+# Default: 0.7
+opacity = 0.7
+
 [appearance.theme]
-# Built-in themes: "purple" (default), "slint", "red", "green"
-# Use "custom" to load from material-theme.json
+# Built-in themes: "default" (default), "slint"
+# Use "custom" to load from a custom JSON path
 # Use "auto" to generate theme from wallpaper colors
 # Use "seed" to generate theme from a specific HEX color
-name = "purple"
+# Default: "default"
+name = "default"
 
 # "dark" (default) or "light"
 mode = "dark"
@@ -18,10 +24,17 @@ mode = "dark"
 # Primary color for theme generation (used only if name = "seed")
 # seed_color = "#1e66f5"
 
+# Path to the custom JSON theme file (used only if name = "custom")
+# path = "/path/to/theme.json"
+
 [appearance.background]
 # Path to the background image
-# Default: "ui/images/background.png"
-path = "ui/images/background.png"
+# Default: unset (uses solid color based on theme)
+# path = "/path/to/background.jpg"
+
+# Fallback solid color in HEX format (used if path is not set or image fails to load)
+# Default: unset (uses background color from the active theme)
+# color = "#1e1e2e"
 
 # Blur intensity (sigma value for Gaussian blur)
 # Set to 0.0 to disable blur. Default: 10.0
