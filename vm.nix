@@ -27,6 +27,8 @@
       etc."greetd/mdgreet.toml".text = ''
         [appearance]
         label = "NixOS VM Test"
+        [logging]
+        level = "debug"
       '';
     };
 

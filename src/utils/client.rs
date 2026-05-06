@@ -1,136 +1,101 @@
 use anyhow::{Context, Result};
 use greetd_ipc::{AuthMessageType, ErrorType, Request, Response, codec::TokioCodec};
 use tokio::net::UnixStream;
-use tracing::{debug, info, warn};
-
-const GREETD_SOCK_ENV_VAR: &str = "GREETD_SOCK";
-
-#[derive(Clone, PartialEq, Debug)]
-pub enum AuthStatus {
-    NotStarted,
-    InProgress,
-    Done,
-}
+use tracing::{debug, error, info};
 
 pub struct GreetdClient {
-    socket: Option<UnixStream>,
-    auth_status: AuthStatus,
-    demo: bool,
+    stream: UnixStream,
 }
 
 impl GreetdClient {
-    pub async fn new(demo: bool) -> Result<Self> {
-        let socket = if demo {
-            warn!("client: Running in DEMO mode (no greetd connection)");
-            None
-        } else {
-            let sock_path = std::env::var(GREETD_SOCK_ENV_VAR).with_context(|| {
-                format!(
-                    "Missing environment variable '{}'. Is greetd running?",
-                    GREETD_SOCK_ENV_VAR
-                )
-            })?;
-            info!("client: Connecting to greetd socket at {}", sock_path);
-            Some(UnixStream::connect(sock_path).await?)
-        };
-
-        Ok(Self {
-            socket,
-            auth_status: AuthStatus::NotStarted,
-            demo,
-        })
+    /// Connects to the greetd socket
+    pub async fn new() -> Result<Self> {
+        let socket_path = std::env::var("GREETD_SOCK")
+            .context("GREETD_SOCK is not set. Are you running under greetd?")?;
+        let stream = UnixStream::connect(socket_path).await?;
+        Ok(Self { stream })
     }
 
-    pub async fn create_session(&mut self, username: &str) -> Result<Response> {
-        info!("client: Creating session for user: {}", username);
+    /// Authenticate a user with a given password
+    pub async fn authenticate(&mut self, username: &str, password: &str) -> Result<()> {
+        let mut request = Request::CreateSession {
+            username: username.to_string(),
+        };
 
-        let resp = if let Some(socket) = &mut self.socket {
-            let msg = Request::CreateSession {
-                username: username.to_string(),
-            };
-            msg.write_to(socket).await?;
-            Response::read_from(socket).await?
-        } else {
-            // Demo mode simulation
-            Response::AuthMessage {
-                auth_message_type: AuthMessageType::Secret,
-                auth_message: "Password:".to_string(),
+        let mut secret_prompted = false;
+
+        loop {
+            // Write the current request to greetd
+            request.write_to(&mut self.stream).await?;
+
+            // Read the response from greetd
+            let response = Response::read_from(&mut self.stream).await?;
+
+            match response {
+                Response::AuthMessage {
+                    auth_message,
+                    auth_message_type,
+                } => {
+                    debug!("Received AuthMessage: {:?}", auth_message);
+                    let reply = match auth_message_type {
+                        AuthMessageType::Secret => {
+                            if secret_prompted {
+                                let _ = Request::CancelSession.write_to(&mut self.stream).await;
+                                anyhow::bail!("Invalid username or password");
+                            }
+                            secret_prompted = true;
+                            Some(password.to_string())
+                        }
+                        AuthMessageType::Visible => Some(username.to_string()),
+                        AuthMessageType::Info => {
+                            info!("greetd info: {}", auth_message);
+                            None
+                        }
+                        AuthMessageType::Error => {
+                            error!("greetd error: {}", auth_message);
+                            None
+                        }
+                    };
+
+                    request = Request::PostAuthMessageResponse { response: reply };
+                }
+                Response::Success => {
+                    info!("Authentication successful!");
+                    return Ok(());
+                }
+                Response::Error {
+                    error_type,
+                    description,
+                } => {
+                    let _ = Request::CancelSession.write_to(&mut self.stream).await;
+                    if let ErrorType::AuthError = error_type {
+                        anyhow::bail!("Invalid username or password");
+                    } else {
+                        anyhow::bail!("greetd error: {}", description);
+                    }
+                }
             }
-        };
-
-        self.update_status(&resp);
-        Ok(resp)
-    }
-
-    pub async fn send_auth_response(&mut self, input: Option<String>) -> Result<Response> {
-        debug!("client: Sending auth response to greetd");
-
-        let resp = if let Some(socket) = &mut self.socket {
-            let msg = Request::PostAuthMessageResponse {
-                response: input.clone(),
-            };
-            msg.write_to(socket).await?;
-            Response::read_from(socket).await?
-        } else {
-            // Demo mode simulation: accept 'greet' as password
-            match input.as_deref() {
-                Some("greet") => Response::Success,
-                _ => Response::Error {
-                    error_type: ErrorType::AuthError,
-                    description: "Invalid password (use 'greet' for demo)".to_string(),
-                },
-            }
-        };
-
-        self.update_status(&resp);
-        Ok(resp)
-    }
-
-    pub async fn start_session(
-        &mut self,
-        command: Vec<String>,
-        env: Vec<String>,
-    ) -> Result<Response> {
-        info!("client: Starting session with command: {:?}", command);
-
-        if self.demo || self.socket.is_none() {
-            info!("client: Demo mode - session start simulated.");
-            return Ok(Response::Success);
         }
-
-        let socket = self.socket.as_mut().unwrap();
-        let msg = Request::StartSession { cmd: command, env };
-        msg.write_to(socket).await?;
-
-        let resp = Response::read_from(socket).await?;
-        Ok(resp)
     }
 
-    // pub async fn cancel_session(&mut self) -> Result<Response> {
-    //     info!("client: Cancelling greetd session");
-    //     self.auth_status = AuthStatus::NotStarted;
+    /// Starts a session with the given command and environment variables
+    pub async fn start_session(&mut self, cmd: Vec<String>, env: Vec<String>) -> Result<()> {
+        let request = Request::StartSession { cmd, env };
+        request.write_to(&mut self.stream).await?;
 
-    //     if self.demo || self.socket.is_none() {
-    //         return Ok(Response::Success);
-    //     }
+        let response = Response::read_from(&mut self.stream).await?;
 
-    //     let socket = self.socket.as_mut().unwrap();
-    //     let msg = Request::CancelSession;
-    //     msg.write_to(socket).await?;
-
-    //     let resp = Response::read_from(socket).await?;
-    //     Ok(resp)
-    // }
-
-    pub fn get_auth_status(&self) -> &AuthStatus {
-        &self.auth_status
-    }
-
-    fn update_status(&mut self, response: &Response) {
         match response {
-            Response::Success => self.auth_status = AuthStatus::Done,
-            Response::AuthMessage { .. } => self.auth_status = AuthStatus::InProgress,
-            Response::Error { .. } => self.auth_status = AuthStatus::NotStarted,
+            Response::Success => {
+                info!("Session started successfully!");
+                Ok(())
+            }
+            Response::Error { description, .. } => {
+                anyhow::bail!("Failed to start session: {}", description);
+            }
+            Response::AuthMessage { .. } => {
+                anyhow::bail!("Unexpected AuthMessage when trying to start session");
+            }
         }
     }
 }

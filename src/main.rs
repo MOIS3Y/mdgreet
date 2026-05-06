@@ -7,7 +7,7 @@ mod utils;
 
 use cli::Args;
 use config::GreeterConfig;
-use slint::{ComponentHandle, Model, SharedString};
+use slint::{ComponentHandle, Model};
 use std::sync::{Arc, Mutex};
 use tracing::info;
 
@@ -91,117 +91,90 @@ async fn main() {
         }
     });
 
-    // Authentication Logic
-    let ui_handle = ui.as_weak();
-    let users_data_login = users_data.clone();
+    let ui_login_weak = ui.as_weak();
     let cache_login = cache.clone();
-    let demo_mode = args.demo;
+    let is_demo = args.demo;
 
-    ui.on_login(move |username_or_login, password| {
-        let ui_weak = ui_handle.clone();
-        let users_data_login = users_data_login.clone();
-        let cache_login = cache_login.clone();
-        let username_or_login = username_or_login.to_string();
-        let password = password.to_string();
+    ui.on_login(move |username, password| {
+        let ui = ui_login_weak.unwrap();
+        let selected_compositor_idx = ui.get_selected_compositor_index();
+        let compositors = ui.get_compositors();
 
-        let _ = slint::spawn_local(async move {
-            let ui = ui_weak.unwrap();
-            if username_or_login.is_empty() {
-                ui.set_auth_error(SharedString::from("Please select a user"));
-                return;
+        let exec_cmd = if let Some(comp) = compositors.row_data(selected_compositor_idx as usize) {
+            comp.exec.to_string()
+        } else {
+            String::new()
+        };
+
+        if exec_cmd.is_empty() {
+            ui.set_auth_error(slint::SharedString::from("No compositor selected"));
+            return;
+        }
+
+        let username_str = username.to_string();
+        let password_str = password.to_string();
+        let exec_name = if let Some(comp) = compositors.row_data(selected_compositor_idx as usize) {
+            comp.name.to_string()
+        } else {
+            String::new()
+        };
+
+        if is_demo {
+            tracing::info!(
+                "Demo mode: simulated login for user {}, compositor exec: {}",
+                username_str,
+                exec_cmd
+            );
+            // Save to cache
+            {
+                let mut cache = cache_login.lock().unwrap();
+                cache.set_last_user(username_str.clone());
+                cache.set_last_session(username_str.clone(), exec_name.clone());
+                cache.save();
             }
+            std::process::exit(0);
+        }
 
-            let user_data = users_data_login
-                .iter()
-                .find(|u| u.user_name == username_or_login || u.real_name == username_or_login);
+        let ui_weak_async = ui_login_weak.clone();
+        let cache_async = cache_login.clone();
 
-            let actual_username = match user_data {
-                Some(data) => data.user_name.to_string(),
-                None => username_or_login.clone(),
-            };
-
-            info!("Login attempt for '{}'!", actual_username);
-
-            let current_comp_idx = ui.get_selected_compositor_index();
-            let mut comp_name = String::new();
-            let mut comp_exec = String::new();
-            if let Some(comp) = ui.get_compositors().row_data(current_comp_idx as usize) {
-                comp_name = comp.name.to_string();
-                comp_exec = comp.exec.to_string();
-            }
-
-            if comp_exec.is_empty() {
-                ui.set_auth_error(SharedString::from("Please select a session"));
-                return;
-            }
-
-            // Greetd Interaction
-            match crate::utils::client::GreetdClient::new(demo_mode).await {
-                Ok(mut client) => match client.create_session(&actual_username).await {
-                    Ok(_) => {
-                        let status = client.get_auth_status().clone();
-                        if status == crate::utils::client::AuthStatus::InProgress {
-                            match client.send_auth_response(Some(password)).await {
-                                Ok(_) => {
-                                    if *client.get_auth_status()
-                                        == crate::utils::client::AuthStatus::Done
-                                    {
-                                        let cmd: Vec<String> = shlex::split(&comp_exec)
-                                            .unwrap_or_else(|| vec![comp_exec.clone()]);
-                                        let env = vec![];
-                                        match client.start_session(cmd, env).await {
-                                            Ok(_) => {
-                                                let mut cache = cache_login.lock().unwrap();
-                                                cache.set_last_user(actual_username.clone());
-                                                cache.set_last_session(actual_username, comp_name);
-                                                cache.save();
-                                                info!("Session started successfully. Exiting.");
-                                                slint::quit_event_loop().unwrap();
-                                            }
-                                            Err(e) => ui.set_auth_error(SharedString::from(
-                                                format!("Failed to start session: {}", e),
-                                            )),
-                                        }
-                                    } else {
-                                        ui.set_auth_error(SharedString::from(
-                                            "Authentication failed",
-                                        ));
-                                    }
-                                }
-                                Err(e) => ui.set_auth_error(SharedString::from(format!(
-                                    "Auth error: {}",
-                                    e
-                                ))),
-                            }
-                        } else if status == crate::utils::client::AuthStatus::Done {
-                            let cmd: Vec<String> =
-                                shlex::split(&comp_exec).unwrap_or_else(|| vec![comp_exec.clone()]);
-                            let env = vec![];
-                            match client.start_session(cmd, env).await {
-                                Ok(_) => {
-                                    let mut cache = cache_login.lock().unwrap();
-                                    cache.set_last_user(actual_username.clone());
-                                    cache.set_last_session(actual_username, comp_name);
-                                    cache.save();
-                                    info!("Session started successfully. Exiting.");
-                                    slint::quit_event_loop().unwrap();
-                                }
-                                Err(e) => ui.set_auth_error(SharedString::from(format!(
-                                    "Failed to start session: {}",
-                                    e
-                                ))),
-                            }
-                        } else {
-                            ui.set_auth_error(SharedString::from(
-                                "Failed to initialize authentication",
-                            ));
-                        }
+        tokio::spawn(async move {
+            match crate::utils::client::GreetdClient::new().await {
+                Ok(mut client) => {
+                    if let Err(e) = client.authenticate(&username_str, &password_str).await {
+                        let err_msg = e.to_string();
+                        let _ = ui_weak_async.upgrade_in_event_loop(move |ui| {
+                            ui.set_auth_error(slint::SharedString::from(err_msg));
+                        });
+                        return;
                     }
-                    Err(e) => {
-                        ui.set_auth_error(SharedString::from(format!("Session error: {}", e)))
+
+                    // Save to cache
+                    {
+                        let mut cache = cache_async.lock().unwrap();
+                        cache.set_last_user(username_str.clone());
+                        cache.set_last_session(username_str.clone(), exec_name.clone());
+                        cache.save();
                     }
-                },
-                Err(e) => ui.set_auth_error(SharedString::from(format!("Client error: {}", e))),
+
+                    let cmd = shlex::split(&exec_cmd).unwrap_or_else(|| vec![exec_cmd]);
+                    let env = vec![];
+
+                    if let Err(e) = client.start_session(cmd, env).await {
+                        let err_msg = e.to_string();
+                        let _ = ui_weak_async.upgrade_in_event_loop(move |ui| {
+                            ui.set_auth_error(slint::SharedString::from(err_msg));
+                        });
+                    } else {
+                        std::process::exit(0);
+                    }
+                }
+                Err(e) => {
+                    let err_msg = e.to_string();
+                    let _ = ui_weak_async.upgrade_in_event_loop(move |ui| {
+                        ui.set_auth_error(slint::SharedString::from(err_msg));
+                    });
+                }
             }
         });
     });
