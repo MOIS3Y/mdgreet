@@ -13,7 +13,7 @@ component PowerOption {
     callback clicked();
 
     VerticalLayout {
-        spacing: 12px;
+        spacing: 8px;
         alignment: center;
 
         HorizontalLayout {
@@ -44,11 +44,11 @@ export component PowerBottomSheet inherits ModalBottomSheet {
     callback sleep();
     callback hibernate();
 
-    height: 220px;
+    height: 170px;
 
     VerticalLayout {
-        padding: 24px;
-        spacing: 24px;
+        padding: 16px;
+        spacing: 16px;
         alignment: center;
 
         MaterialText {
@@ -97,10 +97,6 @@ export component PowerBottomSheet inherits ModalBottomSheet {
                     root.close();
                 }
             }
-        }
-
-        Rectangle {
-            height: 20px;
         }
     }
 }
