@@ -6,6 +6,7 @@ import {
     FilledIconButton,
     MenuItem,
     TextButton,
+    CircularProgressIndicator,
 } from "@material";
 import { PasswordField } from "password_field.slint";
 import { UserSelector } from "user_selector.slint";
@@ -27,6 +28,7 @@ export component Login {
     in property <image> composer-icon;
     in-out property <string> auth-error;
     in property <string> greeting-msg: "Welcome!";
+    in property <bool> is-authenticating: false;
 
     callback login(string, string); // user_name, password
     callback user-selected(int);
@@ -111,6 +113,7 @@ export component Login {
                     items: root.user-menu-items;
                     current_index <=> root.selected-user-index;
                     leading_icon: @image-url("../icons/person.svg");
+                    enabled: !root.is-authenticating;
 
                     selected(idx) => {
                         root.user-selected(idx);
@@ -125,6 +128,7 @@ export component Login {
                     label: "Username";
                     text <=> root.manual-username;
                     leading_icon: @image-url("../icons/person.svg");
+                    enabled: !root.is-authenticating;
                 }
             }
         }
@@ -141,6 +145,7 @@ export component Login {
                 supporting_text: root.auth-error;
                 leading_icon: @image-url("../icons/passkey.svg");
                 trailing_icon: root.show-password ? @image-url("../icons/visibility.svg") : @image-url("../icons/visibility_lock.svg");
+                enabled: !root.is-authenticating;
 
                 trailing_icon_clicked => {
                     root.show-password = !root.show-password;
@@ -160,16 +165,17 @@ export component Login {
             padding_right: 40px;
             TextButton {
                 text: root.manual-user-entry ? "Select from list" : "Not listed?";
+                enabled: !root.is-authenticating;
                 clicked => {
                     root.manual-user-entry = !root.manual-user-entry;
                 }
             }
         }
 
-        // Login Button
+        // Login Button / Spinner
         HorizontalLayout {
             alignment: center;
-            FilledIconButton {
+            if (!root.is-authenticating): FilledIconButton {
                 icon: @image-url("../icons/fingerprint.svg");
                 width: 64px;
                 height: 64px;
@@ -179,6 +185,12 @@ export component Login {
                         root.manual-user-entry ? root.manual-username : (root.selected-user-index >= 0 ? root.users[root.selected-user-index].user_name : ""),
                         root.password-text);
                 }
+            }
+
+            if (root.is-authenticating): CircularProgressIndicator {
+                width: 48px;
+                height: 48px;
+                indeterminate: true;
             }
         }
     }

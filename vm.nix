@@ -18,8 +18,11 @@
       variables = {
         WLR_RENDERER_ALLOW_SOFTWARE = "1";
         WLR_NO_HARDWARE_CURSORS = "1";
+        XCURSOR_THEME = "Adwaita";
+        XCURSOR_SIZE = "24";
       };
       systemPackages = with pkgs; [
+        adwaita-icon-theme
         alacritty
         cage
         dbus

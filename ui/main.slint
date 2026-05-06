@@ -53,6 +53,7 @@ export component GreeterWindow inherits MaterialWindow {
     in property <[MenuItem]> compositor-menu-items;
     in-out property <int> selected-compositor-index: 0;
 
+    in-out property <bool> is-authenticating: false;
     in-out property <bool> show-login: false;
 
     callback set-color-scheme(bool);
@@ -119,6 +120,7 @@ export component GreeterWindow inherits MaterialWindow {
                 composer-icon: root.composer-icon;
                 auth-error <=> root.auth-error;
                 greeting-msg: root.greeting-msg;
+                is-authenticating <=> root.is-authenticating;
 
                 login(user_name, pwd) => {
                     root.login(user_name, pwd);

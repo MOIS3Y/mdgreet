@@ -119,6 +119,8 @@ async fn main() {
             String::new()
         };
 
+        ui.set_is_authenticating(true);
+
         if is_demo {
             tracing::info!(
                 "Demo mode: simulated login for user {}, compositor exec: {}",
@@ -132,6 +134,7 @@ async fn main() {
                 cache.set_last_session(username_str.clone(), exec_name.clone());
                 cache.save();
             }
+            ui.set_is_authenticating(false);
             std::process::exit(0);
         }
 
@@ -145,6 +148,7 @@ async fn main() {
                         let err_msg = e.to_string();
                         let _ = ui_weak_async.upgrade_in_event_loop(move |ui| {
                             ui.set_auth_error(slint::SharedString::from(err_msg));
+                            ui.set_is_authenticating(false);
                         });
                         return;
                     }
@@ -164,8 +168,12 @@ async fn main() {
                         let err_msg = e.to_string();
                         let _ = ui_weak_async.upgrade_in_event_loop(move |ui| {
                             ui.set_auth_error(slint::SharedString::from(err_msg));
+                            ui.set_is_authenticating(false);
                         });
                     } else {
+                        let _ = ui_weak_async.upgrade_in_event_loop(move |ui| {
+                            ui.set_is_authenticating(false);
+                        });
                         std::process::exit(0);
                     }
                 }
@@ -173,6 +181,7 @@ async fn main() {
                     let err_msg = e.to_string();
                     let _ = ui_weak_async.upgrade_in_event_loop(move |ui| {
                         ui.set_auth_error(slint::SharedString::from(err_msg));
+                        ui.set_is_authenticating(false);
                     });
                 }
             }
