@@ -37,6 +37,7 @@ export component Login {
     property <bool> show-password: false;
     property <string> manual-username: "";
     property <string> password-text: "";
+    property <float> field-opacity: 0.5;
 
     // Clear error when password or user changes
     changed password-text => {
@@ -114,6 +115,7 @@ export component Login {
                     current_index <=> root.selected-user-index;
                     leading_icon: @image-url("../icons/person.svg");
                     enabled: !root.is-authenticating;
+                    background_opacity: root.field-opacity;
 
                     selected(idx) => {
                         root.user-selected(idx);
@@ -129,6 +131,7 @@ export component Login {
                     text <=> root.manual-username;
                     leading_icon: @image-url("../icons/person.svg");
                     enabled: !root.is-authenticating;
+                    background_opacity: root.field-opacity;
                 }
             }
         }
@@ -146,6 +149,7 @@ export component Login {
                 leading_icon: @image-url("../icons/passkey.svg");
                 trailing_icon: root.show-password ? @image-url("../icons/visibility.svg") : @image-url("../icons/visibility_lock.svg");
                 enabled: !root.is-authenticating;
+                background_opacity: root.field-opacity;
 
                 trailing_icon_clicked => {
                     root.show-password = !root.show-password;

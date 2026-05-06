@@ -15,6 +15,7 @@ export component UserSelector {
     in property <bool> enabled: true;
     in property <image> leading_icon;
     in property <[MenuItem]> items;
+    in property <float> background_opacity: 1.0;
     in_out property <int> current_index: -1;
 
     callback selected(index: int);
@@ -41,6 +42,7 @@ export component UserSelector {
         enabled: root.enabled;
         leading_icon: root.leading_icon;
         trailing_icon: Icons.arrow_drop_down;
+        background_opacity: root.background_opacity;
         read_only: true;
         // Explicit binding solves the initialization bug
         text: root.current_index >= 0 && root.current_index < root.items.length ? root.items[root.current_index].text : "";
