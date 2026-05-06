@@ -264,6 +264,10 @@ impl Appearance {
             ui.set_greeting_msg(slint::SharedString::from(label));
         }
 
+        if let Some(opacity) = app_config.opacity {
+            ui.set_window_opacity(opacity);
+        }
+
         // 2. Initialize Background
         let bg_config = &app_config.background;
 

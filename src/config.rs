@@ -47,6 +47,7 @@ impl Default for BackgroundConfig {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppearanceConfig {
     pub label: Option<String>,
+    pub opacity: Option<f32>,
     #[serde(default)]
     pub theme: ThemeConfig,
     #[serde(default)]
@@ -57,6 +58,7 @@ impl Default for AppearanceConfig {
     fn default() -> Self {
         Self {
             label: Some("Welcome!".to_string()),
+            opacity: Some(0.7),
             theme: ThemeConfig::default(),
             background: BackgroundConfig::default(),
         }

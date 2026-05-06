@@ -42,6 +42,7 @@ export component GreeterWindow inherits MaterialWindow {
     in property <string> minutes: "00";
     in property <string> date: "";
     in property <string> greeting-msg: "Welcome!";
+    in property <float> window-opacity: 0.7;
 
     in property <[User]> users;
     in property <[MenuItem]> user-menu-items;
@@ -110,7 +111,7 @@ export component GreeterWindow inherits MaterialWindow {
         if (root.show-login): Rectangle {
             width: 380px;
             height: 500px;
-            background: MaterialPalette.surface-container.with-alpha(0.7);
+            background: MaterialPalette.surface-container.with-alpha(root.window-opacity);
             border_radius: 32px;
 
             Login {
@@ -176,6 +177,7 @@ export component GreeterWindow inherits MaterialWindow {
     power_menu := PowerBottomSheet {
         width: root.width;
         height: root.height;
+        background_opacity: root.window-opacity;
 
         shutdown => {
             root.shutdown();

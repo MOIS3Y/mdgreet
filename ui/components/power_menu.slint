@@ -1,10 +1,10 @@
 import {
-    ModalBottomSheet,
     MaterialPalette,
     MaterialTypography,
     MaterialText,
     OutlineIconButton,
 } from "@material";
+import { ModalBottomSheet } from "bottom_sheet.slint";
 
 component PowerOption {
     in property <image> icon;
@@ -45,6 +45,7 @@ export component PowerBottomSheet inherits ModalBottomSheet {
     callback hibernate();
 
     height: 170px;
+    background_opacity: 0.7;
 
     VerticalLayout {
         padding: 16px;
