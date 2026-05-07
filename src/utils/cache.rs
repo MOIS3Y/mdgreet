@@ -10,7 +10,9 @@ use std::hash::Hash;
 use std::num::NonZeroUsize;
 use std::path::PathBuf;
 
+/// Maximum number of items to keep in the LRU cache.
 const CACHE_LIMIT: usize = 100;
+
 /// Returns the base directory for all cache files (state, images, etc.)
 pub fn get_cache_dir(config: &config::GreeterConfig) -> PathBuf {
     config
@@ -20,12 +22,16 @@ pub fn get_cache_dir(config: &config::GreeterConfig) -> PathBuf {
         .unwrap_or_else(|| PathBuf::from(format!("/var/cache/{}", config::GREETER_NAME)))
 }
 
+/// Persistent state cache for the greeter.
+///
+/// Stores information about the last logged-in user and their preferred sessions.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Cache {
-    /// The last user who logged in
+    /// The username of the last user who successfully logged in.
     pub last_user: Option<String>,
-    /// Maps username to their last used session (compositor name) using LRU
+    /// Maps username to their last used session (compositor name) using LRU logic.
     pub user_to_last_sess: LruWrapper<String, String>,
+    /// Filesystem path where the cache is stored.
     #[serde(skip)]
     path: PathBuf,
 }
@@ -39,7 +45,9 @@ impl Default for Cache {
         }
     }
 }
+
 impl Cache {
+    /// Loads the cache state from the standard state file.
     pub fn load(config: &config::GreeterConfig) -> Self {
         let path = get_cache_dir(config).join("state.toml");
         let mut cache = if path.exists() {
@@ -55,6 +63,7 @@ impl Cache {
         cache
     }
 
+    /// Persists the current cache state to disk.
     pub fn save(&self) {
         if self.path.as_os_str().is_empty() {
             return;
@@ -67,36 +76,43 @@ impl Cache {
         }
     }
 
+    /// Sets the last successful login user.
     pub fn set_last_user(&mut self, user: String) {
         self.last_user = Some(user);
     }
 
+    /// Records the last used session for a specific user.
     pub fn set_last_session(&mut self, user: String, session: String) {
         self.user_to_last_sess.put(user, session);
     }
 
+    /// Retrieves the last used session name for the given user.
     pub fn get_last_session(&mut self, user: &str) -> Option<&String> {
         self.user_to_last_sess.get(&user.to_string())
     }
 }
 
-/// Wrapper for lru::LruCache to support Serde serialization
+/// Wrapper for `lru::LruCache` to support Serde serialization/deserialization.
 #[derive(Debug, Clone)]
 pub struct LruWrapper<K: Hash + Eq, V>(OrigLruCache<K, V>);
 
 impl<K: Hash + Eq, V> LruWrapper<K, V> {
+    /// Creates a new LRU cache wrapper with the specified capacity.
     pub fn new(capacity: usize) -> Self {
         Self(OrigLruCache::new(NonZeroUsize::new(capacity).unwrap()))
     }
 
+    /// Inserts or updates a value in the cache.
     pub fn put(&mut self, key: K, value: V) {
         self.0.put(key, value);
     }
 
+    /// Retrieves a value from the cache, updating its LRU position.
     pub fn get(&mut self, key: &K) -> Option<&V> {
         self.0.get(key)
     }
 
+    /// Returns the number of items currently in the cache.
     #[allow(dead_code)]
     pub fn len(&self) -> usize {
         self.0.len()
