@@ -4,18 +4,25 @@ use slint::{Image, SharedString, VecModel};
 use std::rc::Rc;
 use tracing::{error, info, warn};
 
-// Structural mirror for Rust backend data
+/// Structural mirror for Rust backend data representing a user.
 #[derive(Clone)]
 pub struct UserData {
+    /// The system login username.
     pub user_name: SharedString,
+    /// The user's display name or real name.
     pub real_name: SharedString,
+    /// The user's password (handled dynamically by greetd, usually empty).
     #[allow(dead_code)]
     pub password: SharedString,
 }
 
+/// Handles user discovery and UI data preparation for authentication.
 pub struct Auth;
 
 impl Auth {
+    /// Discovers system users and initializes the Slint UI properties.
+    ///
+    /// Returns the gathered user data to be used by the application logic.
     pub async fn init(ui: &GreeterWindow, _demo: bool) -> Vec<UserData> {
         let system_users = SystemUser::all().await.unwrap_or_else(|e| {
             error!("AccountsService not available ({:?})", e);
@@ -32,6 +39,7 @@ impl Auth {
 
         let person_icon = ui.get_default_user_icon();
         let (users_model, user_menu_model) = Self::prepare_ui_models(&users_data, &person_icon);
+
         ui.set_users(users_model.into());
         ui.set_user_menu_items(user_menu_model.into());
         ui.set_selected_user_index(-1);
@@ -39,6 +47,7 @@ impl Auth {
         users_data
     }
 
+    /// Converts raw system users into the `UserData` format.
     fn convert_system_users(system_users: Vec<SystemUser>) -> Vec<UserData> {
         system_users
             .into_iter()
@@ -50,6 +59,9 @@ impl Auth {
             .collect()
     }
 
+    /// Prepares VecModels for the UI from a list of user data.
+    ///
+    /// Generates initials for avatars and builds the menu items.
     pub fn prepare_ui_models(
         users_data: &[UserData],
         person_icon: &Image,
