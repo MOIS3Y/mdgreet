@@ -3,12 +3,19 @@ use greetd_ipc::{AuthMessageType, ErrorType, Request, Response, codec::TokioCode
 use tokio::net::UnixStream;
 use tracing::{debug, error, info};
 
+/// A client for interacting with the greetd daemon over a Unix domain socket.
 pub struct GreetdClient {
+    /// The asynchronous stream connected to the greetd socket.
     stream: UnixStream,
 }
 
 impl GreetdClient {
-    /// Connects to the greetd socket
+    /// Creates a new client by connecting to the socket path defined in the
+    /// `GREETD_SOCK` environment variable.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `GREETD_SOCK` is not set or if the connection fails.
     pub async fn new() -> Result<Self> {
         let socket_path = std::env::var("GREETD_SOCK")
             .context("GREETD_SOCK is not set. Are you running under greetd?")?;
@@ -16,7 +23,17 @@ impl GreetdClient {
         Ok(Self { stream })
     }
 
-    /// Authenticate a user with a given password
+    /// Authenticates a user using a challenge-response loop.
+    ///
+    /// This method orchestrates the full authentication flow, handling
+    /// requests for secrets (passwords) and visible information. To prevent
+    /// long PAM-induced delays on failure, it will bail early if prompted
+    /// for a secret more than once.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if authentication fails, the session is cancelled,
+    /// or a protocol error occurs.
     pub async fn authenticate(&mut self, username: &str, password: &str) -> Result<()> {
         let mut request = Request::CreateSession {
             username: username.to_string(),
@@ -78,7 +95,15 @@ impl GreetdClient {
         }
     }
 
-    /// Starts a session with the given command and environment variables
+    /// Requests greetd to start a new session with the specified command
+    /// and environment.
+    ///
+    /// This should only be called after a successful [`authenticate`] call.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the command cannot be started or if greetd
+    /// returns an error response.
     pub async fn start_session(&mut self, cmd: Vec<String>, env: Vec<String>) -> Result<()> {
         let request = Request::StartSession { cmd, env };
         request.write_to(&mut self.stream).await?;
