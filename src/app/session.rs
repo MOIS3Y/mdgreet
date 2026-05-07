@@ -4,9 +4,14 @@ use slint::{ComponentHandle, Image, SharedString, VecModel};
 use std::rc::Rc;
 use tracing::{info, warn};
 
+/// Handles the discovery and UI binding of available desktop sessions.
 pub struct Session;
 
 impl Session {
+    /// Discovers system sessions and initializes the Slint UI properties.
+    ///
+    /// This populates the session selector with available Wayland/X11
+    /// compositors and registers the callback for session selection.
     pub fn init(ui: &GreeterWindow, _demo: bool) {
         let system_sessions = SystemSession::all();
 
@@ -36,6 +41,7 @@ impl Session {
         });
     }
 
+    /// Converts raw system sessions into Slint-compatible Compositor structs.
     fn convert_system_sessions(system_sessions: Vec<SystemSession>) -> Vec<crate::Compositor> {
         system_sessions
             .into_iter()
@@ -46,6 +52,9 @@ impl Session {
             .collect()
     }
 
+    /// Prepares VecModels for the UI from a list of compositors.
+    ///
+    /// Generates both the data model and the visual menu items model.
     fn prepare_ui_models(
         compositors: &[crate::Compositor],
         comp_icon: &Image,
