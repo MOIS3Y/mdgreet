@@ -1,6 +1,6 @@
-use crate::config::{GREETER_NAME, LoggingConfig};
+use crate::config::LoggingConfig;
+use crate::utils::paths;
 use std::fs::OpenOptions;
-use std::path::PathBuf;
 use tracing_subscriber::{EnvFilter, FmtSubscriber};
 
 /// Initializes the global tracing subscriber for the application.
@@ -24,9 +24,7 @@ pub fn init(config: &LoggingConfig) -> Option<tracing_appender::non_blocking::Wo
     let timer = tracing_subscriber::fmt::time::OffsetTime::local_rfc_3339()
         .expect("Couldn't get local time offset");
 
-    let log_path = config.path.clone().unwrap_or_else(|| {
-        PathBuf::from(format!("/var/log/{}/{}.log", GREETER_NAME, GREETER_NAME))
-    });
+    let log_path = config.path.clone().unwrap_or_else(paths::default_log_path);
 
     if let Some(parent) = log_path.parent() {
         let _ = std::fs::create_dir_all(parent);

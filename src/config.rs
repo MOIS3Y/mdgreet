@@ -1,3 +1,4 @@
+use crate::utils::paths;
 use figment::{
     Figment,
     providers::{Env, Format, Serialized, Toml},
@@ -5,9 +6,6 @@ use figment::{
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tracing::warn;
-
-/// The name of the greeter used for configuration and cache paths.
-pub const GREETER_NAME: &str = "mdgreet";
 
 /// Material Design theme configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -184,7 +182,8 @@ impl GreeterConfig {
         }
     }
 
-    /// Loads the configuration from a file, environment variables, and defaults.
+    /// Loads the configuration from a file, environment variables,
+    /// and defaults.
     pub fn load(cli_path: &Option<String>) -> Self {
         let path = resolve_config_path(cli_path);
 
@@ -205,5 +204,5 @@ pub fn resolve_config_path(cli_path: &Option<String>) -> PathBuf {
     cli_path
         .as_ref()
         .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from(format!("/etc/greetd/{}.toml", GREETER_NAME)))
+        .unwrap_or_else(paths::default_config_path)
 }

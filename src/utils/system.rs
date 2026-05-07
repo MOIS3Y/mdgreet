@@ -1,3 +1,4 @@
+use crate::utils::paths;
 use anyhow::{Context, Result};
 use pwd::Passwd;
 use std::fs;
@@ -153,7 +154,7 @@ impl NormalUser {
         let mut min = None;
         let mut max = None;
 
-        if let Ok(content) = fs::read_to_string("/etc/login.defs") {
+        if let Ok(content) = fs::read_to_string(paths::LOGIN_DEFS) {
             for line in content.lines().map(str::trim) {
                 if line.starts_with("UID_MIN") {
                     min = line.split_whitespace().nth(1).and_then(|v| v.parse().ok());
@@ -203,7 +204,7 @@ impl SystemSession {
             Self::scan_dir(&base_path.join("xsessions"), &mut sessions);
         }
 
-        let greetd_env = std::path::Path::new("/etc/greetd/environments");
+        let greetd_env = std::path::Path::new(paths::GREETD_ENVIRONMENTS);
         if greetd_env.exists() {
             if let Ok(content) = fs::read_to_string(greetd_env) {
                 for line in content.lines() {

@@ -1,4 +1,5 @@
 use crate::config;
+use crate::utils::paths;
 use lru::LruCache as OrigLruCache;
 use serde::{
     Deserialize, Deserializer, Serialize, Serializer,
@@ -19,7 +20,7 @@ pub fn get_cache_dir(config: &config::GreeterConfig) -> PathBuf {
         .cache
         .path
         .clone()
-        .unwrap_or_else(|| PathBuf::from(format!("/var/cache/{}", config::GREETER_NAME)))
+        .unwrap_or_else(paths::default_cache_dir)
 }
 
 /// Persistent state cache for the greeter.
@@ -92,7 +93,7 @@ impl Cache {
     }
 }
 
-/// Wrapper for `lru::LruCache` to support Serde serialization/deserialization.
+/// Wrapper for `lru::LruCache` to support Serde serialization.
 #[derive(Debug, Clone)]
 pub struct LruWrapper<K: Hash + Eq, V>(OrigLruCache<K, V>);
 
