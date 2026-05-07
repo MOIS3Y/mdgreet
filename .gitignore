@@ -1,5 +1,9 @@
 # Rust
 target/
+Cargo.lock.bk
+**/*.rs.bk
+rust-crash.log
+core
 
 # Slint generated files (if any)
 ui/**/*.rs
@@ -10,14 +14,31 @@ ui/**/*.rs
 .mdgreet.toml
 .material-theme.json
 
-# IDEs
+# Environment Variables
+.env
+.env.*
+*.env
+
+# IDEs and Editors
 .idea/
 .vscode/
+.zed/
 *.swp
 *.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
 # Nix
 result
+result-*
 .direnv/
 vm-result
 mdgreet-test-vm.qcow2
