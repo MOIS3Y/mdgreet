@@ -3,9 +3,13 @@ use crate::config::PowerConfig;
 use std::process::Command;
 use tracing::{error, info};
 
+/// Handles system power management actions like shutdown and reboot.
 pub struct Power;
 
 impl Power {
+    /// Executes a given shell command string by splitting it into arguments.
+    ///
+    /// Logs an error if the command is invalid or fails to spawn.
     fn execute_command(cmd_string: &str) {
         info!("Executing power action: {}", cmd_string);
 
@@ -22,6 +26,10 @@ impl Power {
         }
     }
 
+    /// Initializes power management callbacks for the Slint UI.
+    ///
+    /// Registers handlers for shutdown, reboot, sleep, and hibernate events,
+    /// using commands from the configuration or systemd defaults.
     pub fn init(ui: &GreeterWindow, config: &PowerConfig) {
         let shutdown_cmd = config
             .shutdown
