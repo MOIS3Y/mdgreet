@@ -29,30 +29,43 @@ pub trait User {
     fn shell(&self) -> zbus::Result<String>;
 }
 
+/// Represents a user available in the system.
 #[derive(Debug, Clone)]
 pub struct SystemUser {
+    /// The unique login name of the user.
     pub user_name: String,
+    /// The descriptive real name of the user.
     pub real_name: String,
 }
 
 impl SystemUser {
+    /// Retrieves all normal users from the system.
+    ///
+    /// It first attempts to use D-Bus (AccountsService) for better metadata.
+    /// If D-Bus is unavailable or returns an empty list, it falls back to
+    /// parsing `/etc/passwd`.
     pub async fn all() -> Result<Vec<Self>> {
-        // 1. Try D-Bus (AccountsService) first as it has better metadata
+        // 1. Try D-Bus (AccountsService) first
         match Self::from_dbus().await {
             Ok(users) if !users.is_empty() => {
                 info!("Found {} users via D-Bus", users.len());
                 return Ok(users);
             }
-            Ok(_) => warn!("D-Bus returned empty user list, falling back to passwd"),
-            Err(e) => warn!("D-Bus error: {:?}, falling back to passwd", e),
+            Ok(_) => {
+                warn!("D-Bus returned empty list, falling back to passwd")
+            }
+            Err(e) => {
+                warn!("D-Bus error: {:?}, falling back to passwd", e)
+            }
         }
 
-        // 2. Fallback to /etc/passwd using the pwd crate
+        // 2. Fallback to /etc/passwd
         let users = Self::from_passwd();
         info!("Found {} users via /etc/passwd", users.len());
         Ok(users)
     }
 
+    /// Fetches users using the AccountsService D-Bus interface.
     async fn from_dbus() -> Result<Vec<Self>> {
         let conn = Connection::system()
             .await
@@ -88,6 +101,7 @@ impl SystemUser {
         Ok(users)
     }
 
+    /// Fetches users by iterating over the local password database.
     fn from_passwd() -> Vec<Self> {
         let mut users = Vec::new();
         let normal_user = NormalUser::load();
@@ -118,6 +132,7 @@ impl SystemUser {
     }
 }
 
+/// Helper to identify "normal" users based on UID ranges.
 struct NormalUser {
     uid_min: u32,
     uid_max: u32,
@@ -133,6 +148,7 @@ impl Default for NormalUser {
 }
 
 impl NormalUser {
+    /// Loads UID limits from `/etc/login.defs` with safe defaults.
     pub fn load() -> Self {
         let mut min = None;
         let mut max = None;
@@ -140,13 +156,9 @@ impl NormalUser {
         if let Ok(content) = fs::read_to_string("/etc/login.defs") {
             for line in content.lines().map(str::trim) {
                 if line.starts_with("UID_MIN") {
-                    if let Some(val) = line.split_whitespace().nth(1) {
-                        min = val.parse().ok();
-                    }
+                    min = line.split_whitespace().nth(1).and_then(|v| v.parse().ok());
                 } else if line.starts_with("UID_MAX") {
-                    if let Some(val) = line.split_whitespace().nth(1) {
-                        max = val.parse().ok();
-                    }
+                    max = line.split_whitespace().nth(1).and_then(|v| v.parse().ok());
                 }
             }
         }
@@ -158,18 +170,25 @@ impl NormalUser {
         }
     }
 
+    /// Checks if a UID falls within the normal user range.
     pub fn is_normal_user(&self, uid: u32) -> bool {
         uid >= self.uid_min && uid <= self.uid_max
     }
 }
 
+/// Represents a desktop session (Wayland or X11) found in the system.
 #[derive(Debug, Clone)]
 pub struct SystemSession {
+    /// Display name of the session.
     pub name: String,
+    /// Command used to execute the session.
     pub exec: String,
 }
 
 impl SystemSession {
+    /// Discovers all available sessions in the system.
+    ///
+    /// Scans standard XDG directories and `greetd` environments.
     pub fn all() -> Vec<Self> {
         let mut sessions = Vec::new();
         let xdg_data_dirs = std::env::var("XDG_DATA_DIRS")
@@ -204,6 +223,7 @@ impl SystemSession {
         sessions
     }
 
+    /// Scans a directory for `.desktop` session files.
     fn scan_dir(path: &std::path::Path, sessions: &mut Vec<Self>) {
         if !path.exists() || !path.is_dir() {
             return;
@@ -220,6 +240,7 @@ impl SystemSession {
         }
     }
 
+    /// Parses a `.desktop` file to extract the session name and command.
     fn parse_desktop_file(path: &std::path::Path) -> Option<Self> {
         let content = fs::read_to_string(path).ok()?;
         let mut name = None;
