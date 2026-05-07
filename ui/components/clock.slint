@@ -1,4 +1,5 @@
 import { MaterialTypography, MaterialPalette, MaterialText } from "@material";
+import { AppStyle } from "../style.slint";
 
 export component Clock {
     in property <string> hours: "00";
@@ -10,12 +11,12 @@ export component Clock {
 
         // Clock with overlap
         VerticalLayout {
-            spacing: -60px;
+            spacing: - (AppStyle.clock-font-size * 0.3 * 1px);
             Text {
                 text: root.hours;
-                font-size: 200px;
-                font-weight: 500;
-                font-family: "FlexRounded";
+                font-size: AppStyle.clock-font-size * 1px;
+                font-weight: AppStyle.clock-font-weight;
+                font-family: AppStyle.clock-font-family;
                 color: MaterialPalette.primary;
                 horizontal-alignment: center;
                 letter-spacing: -5px;
@@ -23,9 +24,9 @@ export component Clock {
 
             Text {
                 text: root.minutes;
-                font-size: 200px;
-                font-weight: 500;
-                font-family: "FlexRounded";
+                font-size: AppStyle.clock-font-size * 1px;
+                font-weight: AppStyle.clock-font-weight;
+                font-family: AppStyle.clock-font-family;
                 color: MaterialPalette.secondary;
                 horizontal-alignment: center;
                 letter-spacing: -5px;

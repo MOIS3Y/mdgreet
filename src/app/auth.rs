@@ -1,7 +1,6 @@
 use crate::GreeterWindow;
 use crate::utils::system::SystemUser;
 use slint::{Image, SharedString, VecModel};
-use std::path::Path;
 use std::rc::Rc;
 use tracing::{error, info, warn};
 
@@ -31,7 +30,8 @@ impl Auth {
             info!("Loaded {} users", users_data.len());
         }
 
-        let (users_model, user_menu_model) = Self::prepare_ui_models(&users_data);
+        let person_icon = ui.get_default_user_icon();
+        let (users_model, user_menu_model) = Self::prepare_ui_models(&users_data, &person_icon);
         ui.set_users(users_model.into());
         ui.set_user_menu_items(user_menu_model.into());
         ui.set_selected_user_index(-1);
@@ -52,6 +52,7 @@ impl Auth {
 
     pub fn prepare_ui_models(
         users_data: &[UserData],
+        person_icon: &Image,
     ) -> (Rc<VecModel<crate::User>>, Rc<VecModel<crate::MenuItem>>) {
         let users_vec: Vec<crate::User> = users_data
             .iter()
@@ -84,8 +85,6 @@ impl Auth {
             })
             .collect();
 
-        let person_icon =
-            Image::load_from_path(Path::new("ui/icons/person.svg")).unwrap_or_default();
         let menu_items: Vec<crate::MenuItem> = users_vec
             .iter()
             .map(|u| crate::MenuItem {

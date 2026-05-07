@@ -1,7 +1,6 @@
 use crate::GreeterWindow;
 use crate::utils::system::SystemSession;
 use slint::{ComponentHandle, Image, SharedString, VecModel};
-use std::path::Path;
 use std::rc::Rc;
 use tracing::{info, warn};
 
@@ -21,7 +20,8 @@ impl Session {
         }
 
         let compositors = Self::convert_system_sessions(system_sessions);
-        let (comp_model, comp_menu_model, comp_icon) = Self::prepare_ui_models(&compositors);
+        let comp_icon = ui.get_default_session_icon();
+        let (comp_model, comp_menu_model) = Self::prepare_ui_models(&compositors, &comp_icon);
 
         ui.set_compositors(comp_model.into());
         ui.set_compositor_menu_items(comp_menu_model.into());
@@ -48,14 +48,11 @@ impl Session {
 
     fn prepare_ui_models(
         compositors: &[crate::Compositor],
+        comp_icon: &Image,
     ) -> (
         Rc<VecModel<crate::Compositor>>,
         Rc<VecModel<crate::MenuItem>>,
-        Image,
     ) {
-        let comp_icon = Image::load_from_path(Path::new("ui/icons/auto_awesome_mosaic.svg"))
-            .unwrap_or_default();
-
         let menu_items: Vec<crate::MenuItem> = if compositors.is_empty() {
             vec![crate::MenuItem {
                 text: SharedString::from("No sessions found"),
@@ -87,7 +84,6 @@ impl Session {
         (
             Rc::new(VecModel::from(comps_vec)),
             Rc::new(VecModel::from(menu_items)),
-            comp_icon,
         )
     }
 }

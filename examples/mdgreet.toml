@@ -10,6 +10,23 @@ label = "Welcome!"
 # Default: 0.7
 opacity = 0.7
 
+# Global font family for all UI elements (buttons, menus, input fields)
+# If unset, uses the system default sans-serif font
+# font_family = "Noto Sans"
+
+[appearance.clock]
+# Font family for the large clock
+# Default: "FlexRounded" (bundled with mdgreet)
+# font_family = "FlexRounded"
+
+# Font size of the clock in pixels
+# Default: 200
+# font_size = 200
+
+# Font weight (e.g., 300 for Light, 500 for Medium, 700 for Bold)
+# Default: 500
+# font_weight = 500
+
 [appearance.theme]
 # Built-in themes: "default" (default), "slint"
 # Use "custom" to load from a custom JSON path

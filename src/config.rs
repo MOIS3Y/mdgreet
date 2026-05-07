@@ -45,9 +45,29 @@ impl Default for BackgroundConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ClockConfig {
+    pub font_family: Option<String>,
+    pub font_weight: Option<i32>,
+    pub font_size: Option<i32>,
+}
+
+impl Default for ClockConfig {
+    fn default() -> Self {
+        Self {
+            font_family: Some("FlexRounded".to_string()),
+            font_weight: Some(500),
+            font_size: Some(200),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppearanceConfig {
     pub label: Option<String>,
+    pub font_family: Option<String>,
     pub opacity: Option<f32>,
+    #[serde(default)]
+    pub clock: ClockConfig,
     #[serde(default)]
     pub theme: ThemeConfig,
     #[serde(default)]
@@ -58,7 +78,9 @@ impl Default for AppearanceConfig {
     fn default() -> Self {
         Self {
             label: Some("Welcome!".to_string()),
+            font_family: None,
             opacity: Some(0.7),
+            clock: ClockConfig::default(),
             theme: ThemeConfig::default(),
             background: BackgroundConfig::default(),
         }

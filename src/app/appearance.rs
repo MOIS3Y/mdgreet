@@ -264,8 +264,22 @@ impl Appearance {
             ui.set_greeting_msg(slint::SharedString::from(label));
         }
 
+        let app_style = ui.global::<crate::AppStyle>();
+
         if let Some(opacity) = app_config.opacity {
-            ui.set_window_opacity(opacity);
+            app_style.set_window_opacity(opacity);
+        }
+        if let Some(font_family) = &app_config.font_family {
+            app_style.set_default_font_family(slint::SharedString::from(font_family));
+        }
+        if let Some(clock_font) = &app_config.clock.font_family {
+            app_style.set_clock_font_family(slint::SharedString::from(clock_font));
+        }
+        if let Some(clock_weight) = app_config.clock.font_weight {
+            app_style.set_clock_font_weight(clock_weight);
+        }
+        if let Some(clock_size) = app_config.clock.font_size {
+            app_style.set_clock_font_size(clock_size);
         }
 
         // 2. Initialize Background

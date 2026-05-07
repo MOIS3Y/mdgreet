@@ -11,6 +11,7 @@ import {
 import { PasswordField } from "password_field.slint";
 import { UserSelector } from "user_selector.slint";
 import { Icons } from "../../material-1.0/ui/icons/icons.slint";
+import { AppStyle } from "../style.slint";
 
 export struct User {
     user_name: string,
@@ -37,7 +38,7 @@ export component Login {
     property <bool> show-password: false;
     property <string> manual-username: "";
     property <string> password-text: "";
-    property <float> field-opacity: 0.5;
+    property <float> field-opacity: AppStyle.window-opacity * 0.7;
 
     // Clear error when password or user changes
     changed password-text => {

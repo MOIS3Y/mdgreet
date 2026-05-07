@@ -15,6 +15,7 @@ import { Login, User } from "components/login.slint";
 import { SessionSelector } from "components/session_selector.slint";
 import { PowerBottomSheet } from "components/power_menu.slint";
 import { Background } from "components/background.slint";
+import { AppStyle } from "style.slint";
 
 import "./fonts/FlexRounded-R.ttf";
 import "./fonts/FlexRounded-M.ttf";
@@ -26,7 +27,7 @@ export struct Compositor {
     exec: string,
 }
 
-export { MaterialPalette, MaterialTypography, User, MenuItem }
+export { MaterialPalette, MaterialTypography, User, MenuItem, AppStyle }
 
 export struct UserData {
     user_name: string,
@@ -35,6 +36,8 @@ export struct UserData {
 }
 
 export component GreeterWindow inherits MaterialWindow {
+    default-font-family: AppStyle.default-font-family != "" ? AppStyle.default-font-family : "sans-serif";
+
     in property <image> background-original;
     in property <image> background-blurred;
     in property <color> background-fallback-color;
@@ -42,7 +45,6 @@ export component GreeterWindow inherits MaterialWindow {
     in property <string> minutes: "00";
     in property <string> date: "";
     in property <string> greeting-msg: "Welcome!";
-    in property <float> window-opacity: 0.7;
 
     in property <[User]> users;
     in property <[MenuItem]> user-menu-items;
@@ -56,6 +58,10 @@ export component GreeterWindow inherits MaterialWindow {
 
     in-out property <bool> is-authenticating: false;
     in-out property <bool> show-login: false;
+
+    // Exported statically compiled icons for Rust backend
+    out property <image> default-user-icon: @image-url("icons/person.svg");
+    out property <image> default-session-icon: @image-url("icons/auto_awesome_mosaic.svg");
 
     callback set-color-scheme(bool);
     set-color-scheme(is-dark) => {
@@ -111,7 +117,7 @@ export component GreeterWindow inherits MaterialWindow {
         if (root.show-login): Rectangle {
             width: 380px;
             height: 500px;
-            background: MaterialPalette.surface-container.with-alpha(root.window-opacity);
+            background: MaterialPalette.surface-container.with-alpha(AppStyle.window-opacity);
             border_radius: 32px;
 
             Login {
@@ -177,7 +183,7 @@ export component GreeterWindow inherits MaterialWindow {
     power_menu := PowerBottomSheet {
         width: root.width;
         height: root.height;
-        background_opacity: root.window-opacity;
+        background_opacity: AppStyle.window-opacity;
 
         shutdown => {
             root.shutdown();
