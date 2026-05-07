@@ -9,6 +9,7 @@ use std::path::Path;
 use std::time::UNIX_EPOCH;
 use tracing::{info, warn};
 
+/// Internal representation of a Material Design color scheme.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) struct MaterialScheme {
     pub primary: String,
@@ -158,6 +159,7 @@ impl From<MaterialScheme> for crate::MaterialScheme {
     }
 }
 
+/// Container for both dark and light color schemes.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) struct MaterialSchemes {
     pub dark: MaterialScheme,
@@ -173,11 +175,13 @@ impl From<MaterialSchemes> for crate::MaterialSchemes {
     }
 }
 
+/// Full Material Design theme structure.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) struct MaterialTheme {
     pub schemes: MaterialSchemes,
 }
 
+/// Metadata used to track and invalidate dynamic themes.
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 struct ThemeMetadata {
     mode: String,
@@ -186,6 +190,7 @@ struct ThemeMetadata {
     seed_color: String,
 }
 
+/// Converts a HEX or CSS color string to a Slint Color.
 fn string_to_color(color: String) -> slint::Color {
     let c = color
         .parse::<css_color_parser2::Color>()
@@ -198,15 +203,19 @@ fn string_to_color(color: String) -> slint::Color {
     slint::Color::from_argb_u8((c.a * 255.) as u8, c.r, c.g, c.b)
 }
 
+/// Converts an Argb color object to a HEX string.
 fn argb_to_hex(argb: Argb) -> String {
     format!("#{:02x}{:02x}{:02x}", argb.red, argb.green, argb.blue)
 }
 
+/// The built-in default theme embedded into the binary.
 const DEFAULT_THEME: &str = include_str!("../../ui/themes/default.json");
 
+/// Controller for the visual appearance of the greeter.
 pub struct Appearance;
 
 impl Appearance {
+    /// Initializes the UI appearance based on the configuration.
     pub fn init(ui: &crate::GreeterWindow, config: &crate::config::GreeterConfig) {
         let app_config = &config.appearance;
         // 1. Initialize Theme
@@ -320,6 +329,7 @@ impl Appearance {
         }
     }
 
+    /// Generates or retrieves a dynamic theme based on current configuration.
     fn get_dynamic_theme(config: &crate::config::GreeterConfig) -> Option<MaterialTheme> {
         let cache_dir = utils::cache::get_cache_dir(config);
         let theme_path = cache_dir.join("generated_theme.json");
@@ -404,6 +414,7 @@ impl Appearance {
         Some(theme)
     }
 
+    /// Creates a full Material Theme from a source ARGB seed color.
     fn generate_from_seed(seed: Argb) -> MaterialTheme {
         let m3_theme = ThemeBuilder::with_source(seed).build();
         let light = Self::map_m3_scheme(m3_theme.schemes.light);
@@ -413,6 +424,7 @@ impl Appearance {
         }
     }
 
+    /// Maps a raw material-colors Scheme to our internal MaterialScheme.
     fn map_m3_scheme(s: material_colors::scheme::Scheme) -> MaterialScheme {
         MaterialScheme {
             primary: argb_to_hex(s.primary),
@@ -467,6 +479,7 @@ impl Appearance {
         }
     }
 
+    /// Loads a theme from the embedded resources or built-in list.
     pub fn load_builtin_theme(name: &str) -> Option<MaterialTheme> {
         let json = match name {
             "default" | "slint" => DEFAULT_THEME,
@@ -475,12 +488,14 @@ impl Appearance {
         serde_json::from_str(json).ok()
     }
 
+    /// Loads a custom theme from a JSON file on disk.
     pub fn load_custom_theme(path: &str) -> Result<MaterialTheme> {
         let content =
             fs::read_to_string(path).with_context(|| format!("theme: failed to read: {}", path))?;
         serde_json::from_str(&content).context("theme: failed to parse JSON")
     }
 
+    /// Applies a MaterialTheme to the Slint UI instance.
     pub fn apply(ui: &crate::GreeterWindow, theme: &MaterialTheme) {
         let schemes: crate::MaterialSchemes = theme.schemes.clone().into();
         ui.global::<crate::MaterialPalette>().set_schemes(schemes);
