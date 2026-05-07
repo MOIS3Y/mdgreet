@@ -3,6 +3,17 @@ use std::fs::OpenOptions;
 use std::path::PathBuf;
 use tracing_subscriber::{EnvFilter, FmtSubscriber};
 
+/// Initializes the global tracing subscriber for the application.
+///
+/// This function sets up logging based on the provided configuration.
+/// It attempts to open a log file for non-blocking writes. If the file
+/// cannot be opened, it falls back to logging to standard output.
+///
+/// # Returns
+///
+/// Returns a [`tracing_appender::non_blocking::WorkerGuard`] if file
+/// logging is successfully initialized. This guard must be kept alive
+/// for the duration of the program to ensure all logs are flushed.
 pub fn init(config: &LoggingConfig) -> Option<tracing_appender::non_blocking::WorkerGuard> {
     let log_level = config.level.as_deref().unwrap_or("info");
 
