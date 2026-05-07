@@ -1,7 +1,11 @@
 use clap::Parser;
 
 #[derive(Parser, Debug)]
-#[command(name = "mdgreet", about = "Material Design greeter")]
+#[command(
+    name = "mdgreet",
+    version,
+    about = "A clean Material Design 3 greeter for greetd in Rust and Slint"
+)]
 pub struct Args {
     /// Path to configuration file
     #[arg(short, long)]
