@@ -6,13 +6,19 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tracing::warn;
 
+/// The name of the greeter used for configuration and cache paths.
 pub const GREETER_NAME: &str = "mdgreet";
 
+/// Material Design theme configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ThemeConfig {
+    /// Theme name ("default", "slint", "auto", "seed", "custom").
     pub name: String,
+    /// Color mode ("dark" or "light").
     pub mode: Option<String>,
+    /// Seed color for theme generation in HEX format.
     pub seed_color: Option<String>,
+    /// Path to a custom JSON theme file.
     pub path: Option<PathBuf>,
 }
 
@@ -27,10 +33,14 @@ impl Default for ThemeConfig {
     }
 }
 
+/// Background visual configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BackgroundConfig {
+    /// Path to the background image.
     pub path: Option<String>,
+    /// Fallback background color in HEX format.
     pub color: Option<String>,
+    /// Gaussian blur intensity.
     pub blur: Option<f32>,
 }
 
@@ -44,10 +54,14 @@ impl Default for BackgroundConfig {
     }
 }
 
+/// Typography configuration for the large clock.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ClockConfig {
+    /// Font family for the clock digits.
     pub font_family: Option<String>,
+    /// Font weight (300, 500, 700, etc.).
     pub font_weight: Option<i32>,
+    /// Font size in pixels.
     pub font_size: Option<i32>,
 }
 
@@ -61,15 +75,22 @@ impl Default for ClockConfig {
     }
 }
 
+/// General appearance settings including labels, fonts, and opacity.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppearanceConfig {
+    /// Greeting message displayed on the login card.
     pub label: Option<String>,
+    /// Global UI font family.
     pub font_family: Option<String>,
+    /// Transparency level (0.0 to 1.0).
     pub opacity: Option<f32>,
+    /// Clock-specific typography settings.
     #[serde(default)]
     pub clock: ClockConfig,
+    /// Material Design theme settings.
     #[serde(default)]
     pub theme: ThemeConfig,
+    /// Background image and color settings.
     #[serde(default)]
     pub background: BackgroundConfig,
 }
@@ -87,9 +108,12 @@ impl Default for AppearanceConfig {
     }
 }
 
+/// Logging configuration for the greeter.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LoggingConfig {
+    /// Tracing filter level ("info", "debug", etc.).
     pub level: Option<String>,
+    /// Path to the log file.
     pub path: Option<PathBuf>,
 }
 
@@ -102,11 +126,16 @@ impl Default for LoggingConfig {
     }
 }
 
+/// Custom commands for system power management.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PowerConfig {
+    /// Command to shut down the system.
     pub shutdown: Option<String>,
+    /// Command to reboot the system.
     pub reboot: Option<String>,
+    /// Command to suspend the system.
     pub sleep: Option<String>,
+    /// Command to hibernate the system.
     pub hibernate: Option<String>,
 }
 
@@ -121,24 +150,32 @@ impl Default for PowerConfig {
     }
 }
 
+/// Cache configuration settings.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct CacheConfig {
+    /// Directory to store generated themes and state.
     pub path: Option<PathBuf>,
 }
 
+/// Root configuration object for mdgreet.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct GreeterConfig {
+    /// Appearance and typography settings.
     #[serde(default)]
     pub appearance: AppearanceConfig,
+    /// Power management commands.
     #[serde(default)]
     pub power: PowerConfig,
+    /// Logging settings.
     #[serde(default)]
     pub logging: LoggingConfig,
+    /// Cache directory settings.
     #[serde(default)]
     pub cache: CacheConfig,
 }
 
 impl GreeterConfig {
+    /// Returns true if the configured theme mode is "dark".
     pub fn is_dark_mode(&self) -> bool {
         match self.appearance.theme.mode.as_deref() {
             Some("dark") => true,
@@ -147,6 +184,7 @@ impl GreeterConfig {
         }
     }
 
+    /// Loads the configuration from a file, environment variables, and defaults.
     pub fn load(cli_path: &Option<String>) -> Self {
         let path = resolve_config_path(cli_path);
 
@@ -162,6 +200,7 @@ impl GreeterConfig {
     }
 }
 
+/// Resolves the final path to the configuration file.
 pub fn resolve_config_path(cli_path: &Option<String>) -> PathBuf {
     cli_path
         .as_ref()
