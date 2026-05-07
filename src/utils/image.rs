@@ -2,13 +2,21 @@ use crate::config;
 use crate::utils;
 use anyhow::{Context, Result};
 use material_colors::color::Argb;
-use material_colors::quantize::Quantizer;
-use material_colors::quantize::QuantizerCelebi;
+use material_colors::quantize::{Quantizer, QuantizerCelebi};
 use material_colors::score::Score;
 use std::fs;
 use std::path::{Path, PathBuf};
 use tracing::info;
 
+/// Prepares the background image by applying blur and caching the result.
+///
+/// If a blurred version already exists in the cache and is newer than the
+/// original, it returns the cached path immediately.
+///
+/// # Errors
+///
+/// Returns an error if the original image is missing, the cache directory
+/// cannot be created, or image processing fails.
 pub fn prepare_background(
     config: &config::GreeterConfig,
     original_path: &str,
@@ -16,10 +24,7 @@ pub fn prepare_background(
 ) -> Result<PathBuf> {
     let original = Path::new(original_path);
     if !original.exists() {
-        return Err(anyhow::anyhow!(
-            "Original background not found: {}",
-            original_path
-        ));
+        anyhow::bail!("Original background not found: {}", original_path);
     }
 
     let cache_dir = utils::cache::get_cache_dir(config);
@@ -53,9 +58,12 @@ pub fn prepare_background(
         let processed = if blur_sigma > 0.0 {
             // Resize to a smaller width while maintaining aspect ratio
             let target_width = 800;
+            let target_height =
+                (target_width as f32 * (img.height() as f32 / img.width() as f32)) as u32;
+
             let resized = img.resize(
                 target_width,
-                (target_width as f32 * (img.height() as f32 / img.width() as f32)) as u32,
+                target_height,
                 image::imageops::FilterType::Triangle,
             );
             resized.blur(blur_sigma)
@@ -73,7 +81,13 @@ pub fn prepare_background(
 }
 
 /// Extracts the seed color from an image for dynamic theming.
-/// Follows official material-colors optimization guidelines.
+///
+/// This implementation follows official Material Design optimization
+/// guidelines: resizing to 128x128 with Lanczos3 filter before quantization.
+///
+/// # Errors
+///
+/// Returns an error if the image cannot be opened or color extraction fails.
 pub fn extract_seed_color(path: &str) -> Result<[u8; 4]> {
     let img = image::open(path).context("Failed to open image for color extraction")?;
 
@@ -94,7 +108,10 @@ pub fn extract_seed_color(path: &str) -> Result<[u8; 4]> {
     // Score colors and get the best one
     // Signature for 0.4.2: score(map, top_count, fallback, filter)
     let ranked = Score::score(&colors.color_to_count, Some(1), None, None);
-    let best_color = ranked.get(0).cloned().unwrap_or(Argb::from_u32(0xFF445E91));
+    let best_color = ranked
+        .first()
+        .cloned()
+        .unwrap_or(Argb::from_u32(0xFF445E91));
 
     Ok([
         best_color.red,
