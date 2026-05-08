@@ -13,7 +13,7 @@ impl Session {
     ///
     /// This populates the session selector with available Wayland/X11
     /// compositors and registers the callback for session selection.
-    pub fn init(ui: &GreeterWindow, _demo: bool) {
+    pub fn init(ui: &GreeterWindow) {
         let system_sessions = SystemSession::all();
 
         if system_sessions.is_empty() {

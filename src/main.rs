@@ -33,8 +33,8 @@ async fn main() {
     let cache = Arc::new(Mutex::new(utils::cache::Cache::load(&config)));
 
     // Initialize modules
-    let users_data = app::Auth::init(&ui, args.demo).await;
-    app::Session::init(&ui, args.demo);
+    let users_data = app::Auth::init(&ui).await;
+    app::Session::init(&ui);
     app::Power::init(&ui, &config.power);
     app::Appearance::init(&ui, &config);
     let _clock_timer = app::Clock::init(&ui);

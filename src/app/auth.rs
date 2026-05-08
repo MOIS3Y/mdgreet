@@ -23,7 +23,7 @@ impl Auth {
     /// Discovers system users and initializes the Slint UI properties.
     ///
     /// Returns the gathered user data to be used by the application logic.
-    pub async fn init(ui: &GreeterWindow, _demo: bool) -> Vec<UserData> {
+    pub async fn init(ui: &GreeterWindow) -> Vec<UserData> {
         let system_users = SystemUser::all().await.unwrap_or_else(|e| {
             error!("AccountsService not available ({:?})", e);
             Vec::new()
