@@ -111,7 +111,7 @@ export component Login {
                 alignment: center;
                 UserSelector {
                     width: 300px;
-                    label: "User";
+                    label: @tr("User");
                     items: root.user-menu-items;
                     current_index <=> root.selected-user-index;
                     leading_icon: @image-url("../icons/person.svg");
@@ -128,7 +128,7 @@ export component Login {
                 alignment: center;
                 PasswordField {
                     width: 300px;
-                    label: "Username";
+                    label: @tr("Username");
                     text <=> root.manual-username;
                     leading_icon: @image-url("../icons/person.svg");
                     enabled: !root.is-authenticating;
@@ -142,7 +142,7 @@ export component Login {
             alignment: center;
             password_input := PasswordField {
                 width: 300px;
-                label: "Password";
+                label: @tr("Password");
                 text <=> root.password-text;
                 input_type: root.show-password ? InputType.text : InputType.password;
                 has_error: root.auth-error != "";
@@ -169,7 +169,7 @@ export component Login {
             alignment: end;
             padding_right: 40px;
             TextButton {
-                text: root.manual-user-entry ? "Select from list" : "Not listed?";
+                text: root.manual-user-entry ? @tr("Select from list") : @tr("Not listed?");
                 enabled: !root.is-authenticating;
                 clicked => {
                     root.manual-user-entry = !root.manual-user-entry;

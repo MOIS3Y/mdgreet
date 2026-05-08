@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use gettextrs::gettext;
 use greetd_ipc::{AuthMessageType, ErrorType, Request, Response, codec::TokioCodec};
 use tokio::net::UnixStream;
 use tracing::{debug, error, info};
@@ -17,8 +18,9 @@ impl GreetdClient {
     ///
     /// Returns an error if `GREETD_SOCK` is not set or if the connection fails.
     pub async fn new() -> Result<Self> {
-        let socket_path = std::env::var("GREETD_SOCK")
-            .context("GREETD_SOCK is not set. Are you running under greetd?")?;
+        let socket_path = std::env::var("GREETD_SOCK").context(gettext(
+            "GREETD_SOCK is not set. Are you running under greetd?",
+        ))?;
         let stream = UnixStream::connect(socket_path).await?;
         Ok(Self { stream })
     }
@@ -58,7 +60,8 @@ impl GreetdClient {
                         AuthMessageType::Secret => {
                             if secret_prompted {
                                 let _ = Request::CancelSession.write_to(&mut self.stream).await;
-                                anyhow::bail!("Invalid username or password");
+                                let msg = gettext("Invalid username or password");
+                                anyhow::bail!(msg);
                             }
                             secret_prompted = true;
                             Some(password.to_string())
@@ -86,9 +89,11 @@ impl GreetdClient {
                 } => {
                     let _ = Request::CancelSession.write_to(&mut self.stream).await;
                     if let ErrorType::AuthError = error_type {
-                        anyhow::bail!("Invalid username or password");
+                        let msg = gettext("Invalid username or password");
+                        anyhow::bail!(msg);
                     } else {
-                        anyhow::bail!("greetd error: {}", description);
+                        let prefix = gettext("greetd error");
+                        anyhow::bail!("{}: {}", prefix, description);
                     }
                 }
             }
@@ -116,10 +121,12 @@ impl GreetdClient {
                 Ok(())
             }
             Response::Error { description, .. } => {
-                anyhow::bail!("Failed to start session: {}", description);
+                let prefix = gettext("Failed to start session");
+                anyhow::bail!("{}: {}", prefix, description);
             }
             Response::AuthMessage { .. } => {
-                anyhow::bail!("Unexpected AuthMessage when trying to start session");
+                let msg = gettext("Unexpected AuthMessage when trying to start session");
+                anyhow::bail!(msg);
             }
         }
     }

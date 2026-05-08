@@ -42,3 +42,8 @@ result-*
 .direnv/
 vm-result
 mdgreet-test-vm.qcow2
+
+# i18n
+po/*.po~
+po/*.mo
+po/*.gmo

@@ -1,0 +1,197 @@
+# #-#-#-#-#  rust.pot (PACKAGE VERSION)  #-#-#-#-#
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+# #-#-#-#-#  slint.pot (PACKAGE VERSION)  #-#-#-#-#
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"#-#-#-#-#  rust.pot (PACKAGE VERSION)  #-#-#-#-#\n"
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-08 16:36+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"#-#-#-#-#  slint.pot (PACKAGE VERSION)  #-#-#-#-#\n"
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2026-05-08 07:39+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: \n"
+
+#: src/app/session.rs:68
+msgid "No sessions found"
+msgstr ""
+
+#: src/app/session.rs:87
+msgid "None"
+msgstr ""
+
+#: src/app/clock.rs:31
+msgid "Monday"
+msgstr ""
+
+#: src/app/clock.rs:32
+msgid "Tuesday"
+msgstr ""
+
+#: src/app/clock.rs:33
+msgid "Wednesday"
+msgstr ""
+
+#: src/app/clock.rs:34
+msgid "Thursday"
+msgstr ""
+
+#: src/app/clock.rs:35
+msgid "Friday"
+msgstr ""
+
+#: src/app/clock.rs:36
+msgid "Saturday"
+msgstr ""
+
+#: src/app/clock.rs:37
+msgid "Sunday"
+msgstr ""
+
+#: src/app/clock.rs:41
+msgid "January"
+msgstr ""
+
+#: src/app/clock.rs:42
+msgid "February"
+msgstr ""
+
+#: src/app/clock.rs:43
+msgid "March"
+msgstr ""
+
+#: src/app/clock.rs:44
+msgid "April"
+msgstr ""
+
+#: src/app/clock.rs:45
+msgid "May"
+msgstr ""
+
+#: src/app/clock.rs:46
+msgid "June"
+msgstr ""
+
+#: src/app/clock.rs:47
+msgid "July"
+msgstr ""
+
+#: src/app/clock.rs:48
+msgid "August"
+msgstr ""
+
+#: src/app/clock.rs:49
+msgid "September"
+msgstr ""
+
+#: src/app/clock.rs:50
+msgid "October"
+msgstr ""
+
+#: src/app/clock.rs:51
+msgid "November"
+msgstr ""
+
+#: src/app/clock.rs:52
+msgid "December"
+msgstr ""
+
+#: src/app/clock.rs:62
+#, rust-format
+msgid "{weekday}, {month} {day}"
+msgstr ""
+
+#: src/utils/client.rs:22
+msgid "GREETD_SOCK is not set. Are you running under greetd?"
+msgstr ""
+
+#: src/utils/client.rs:63 src/utils/client.rs:92
+msgid "Invalid username or password"
+msgstr ""
+
+#: src/utils/client.rs:95
+msgid "greetd error"
+msgstr ""
+
+#: src/utils/client.rs:124
+msgid "Failed to start session"
+msgstr ""
+
+#: src/utils/client.rs:128
+msgid "Unexpected AuthMessage when trying to start session"
+msgstr ""
+
+#: ui/main.slint:109
+msgctxt "GreeterWindow"
+msgid "Press any key to unlock"
+msgstr ""
+
+#: ui/components/power_menu.slint:56
+msgctxt "PowerBottomSheet"
+msgid "Power Options"
+msgstr ""
+
+#: ui/components/power_menu.slint:67
+msgctxt "PowerBottomSheet"
+msgid "Sleep"
+msgstr ""
+
+#: ui/components/power_menu.slint:76
+msgctxt "PowerBottomSheet"
+msgid "Hibernate"
+msgstr ""
+
+#: ui/components/power_menu.slint:85
+msgctxt "PowerBottomSheet"
+msgid "Restart"
+msgstr ""
+
+#: ui/components/power_menu.slint:94
+msgctxt "PowerBottomSheet"
+msgid "Shut down"
+msgstr ""
+
+#: ui/components/login.slint:114
+msgctxt "Login"
+msgid "User"
+msgstr ""
+
+#: ui/components/login.slint:131
+msgctxt "Login"
+msgid "Username"
+msgstr ""
+
+#: ui/components/login.slint:145
+msgctxt "Login"
+msgid "Password"
+msgstr ""
+
+#: ui/components/login.slint:172
+msgctxt "Login"
+msgid "Select from list"
+msgstr ""
+
+#: ui/components/login.slint:172
+msgctxt "Login"
+msgid "Not listed?"
+msgstr ""

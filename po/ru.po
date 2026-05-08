@@ -1,0 +1,184 @@
+# Russian translations for mdgreet package.
+# Copyright (C) 2026 Stepan Zhukovsky
+# This file is distributed under the same license as the mdgreet package.
+# Stepan Zhukovsky <stepan@zhukovsky.me>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: mdgreet 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-08 16:36+0900\n"
+"PO-Revision-Date: 2026-05-08 12:00+0300\n"
+"Last-Translator: Stepan Zhukovsky <stepan@zhukovsky.me>\n"
+"Language-Team: Russian\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+#: src/app/session.rs:68
+msgid "No sessions found"
+msgstr "Сессии не найдены"
+
+#: src/app/session.rs:87
+msgid "None"
+msgstr "Нет"
+
+#: src/app/clock.rs:31
+msgid "Monday"
+msgstr "Понедельник"
+
+#: src/app/clock.rs:32
+msgid "Tuesday"
+msgstr "Вторник"
+
+#: src/app/clock.rs:33
+msgid "Wednesday"
+msgstr "Среда"
+
+#: src/app/clock.rs:34
+msgid "Thursday"
+msgstr "Четверг"
+
+#: src/app/clock.rs:35
+msgid "Friday"
+msgstr "Пятница"
+
+#: src/app/clock.rs:36
+msgid "Saturday"
+msgstr "Суббота"
+
+#: src/app/clock.rs:37
+msgid "Sunday"
+msgstr "Воскресенье"
+
+#: src/app/clock.rs:41
+msgid "January"
+msgstr "января"
+
+#: src/app/clock.rs:42
+msgid "February"
+msgstr "февраля"
+
+#: src/app/clock.rs:43
+msgid "March"
+msgstr "марта"
+
+#: src/app/clock.rs:44
+msgid "April"
+msgstr "апреля"
+
+#: src/app/clock.rs:45
+msgid "May"
+msgstr "мая"
+
+#: src/app/clock.rs:46
+msgid "June"
+msgstr "июня"
+
+#: src/app/clock.rs:47
+msgid "July"
+msgstr "июля"
+
+#: src/app/clock.rs:48
+msgid "August"
+msgstr "августа"
+
+#: src/app/clock.rs:49
+msgid "September"
+msgstr "сентября"
+
+#: src/app/clock.rs:50
+msgid "October"
+msgstr "октября"
+
+#: src/app/clock.rs:51
+msgid "November"
+msgstr "ноября"
+
+#: src/app/clock.rs:52
+msgid "December"
+msgstr "декабря"
+
+#: src/app/clock.rs:62
+#, rust-format
+msgid "{weekday}, {month} {day}"
+msgstr "{weekday}, {day} {month}"
+
+#: src/utils/client.rs:22
+msgid "GREETD_SOCK is not set. Are you running under greetd?"
+msgstr ""
+"Переменная GREETD_SOCK не установлена. Запущено ли приложение через greetd?"
+
+#: src/utils/client.rs:63 src/utils/client.rs:92
+msgid "Invalid username or password"
+msgstr "Неверное имя пользователя или пароль"
+
+#: src/utils/client.rs:95
+msgid "greetd error"
+msgstr "Ошибка greetd"
+
+#: src/utils/client.rs:124
+msgid "Failed to start session"
+msgstr "Не удалось запустить сессию"
+
+#: src/utils/client.rs:128
+msgid "Unexpected AuthMessage when trying to start session"
+msgstr "Неожиданное сообщение авторизации при попытке запустить сессию"
+
+#: ui/main.slint:109
+msgctxt "GreeterWindow"
+msgid "Press any key to unlock"
+msgstr "Нажмите любую клавишу, чтобы разблокировать"
+
+#: ui/components/power_menu.slint:56
+msgctxt "PowerBottomSheet"
+msgid "Power Options"
+msgstr "Параметры питания"
+
+#: ui/components/power_menu.slint:67
+msgctxt "PowerBottomSheet"
+msgid "Sleep"
+msgstr "Сон"
+
+#: ui/components/power_menu.slint:76
+msgctxt "PowerBottomSheet"
+msgid "Hibernate"
+msgstr "Гибернация"
+
+#: ui/components/power_menu.slint:85
+msgctxt "PowerBottomSheet"
+msgid "Restart"
+msgstr "Перезагрузка"
+
+#: ui/components/power_menu.slint:94
+msgctxt "PowerBottomSheet"
+msgid "Shut down"
+msgstr "Выключение"
+
+#: ui/components/login.slint:114
+msgctxt "Login"
+msgid "User"
+msgstr "Пользователь"
+
+#: ui/components/login.slint:131
+msgctxt "Login"
+msgid "Username"
+msgstr "Имя пользователя"
+
+#: ui/components/login.slint:145
+msgctxt "Login"
+msgid "Password"
+msgstr "Пароль"
+
+#: ui/components/login.slint:172
+msgctxt "Login"
+msgid "Select from list"
+msgstr "Выбрать из списка"
+
+#: ui/components/login.slint:172
+msgctxt "Login"
+msgid "Not listed?"
+msgstr "Нет в списке?"

@@ -16,8 +16,11 @@ async fn main() {
     let args = Args::parse();
     let config = GreeterConfig::load(&args.config);
 
-    // Initialize logging
+    // Initialize logging first so early errors can be captured
     let _log_guard = utils::logging::init(&config.logging);
+
+    // Initialize translations
+    utils::i18n::init();
 
     let ui = GreeterWindow::new().unwrap();
     let is_dark = config.is_dark_mode();
@@ -107,7 +110,9 @@ async fn main() {
         };
 
         if exec_cmd.is_empty() {
-            ui.set_auth_error(slint::SharedString::from("No compositor selected"));
+            ui.set_auth_error(slint::SharedString::from(gettextrs::gettext(
+                "No compositor selected",
+            )));
             return;
         }
 

@@ -15,6 +15,7 @@ clap = { version = "4.6.0", features = ["derive"] }
 css-color-parser2 = "1.0.1"
 dirs = "6.0.0"
 figment = { version = "0.11.5", package = "figment2", features = ["toml"] }
+gettext-rs = { version = "0.7.7", features = ["gettext-system"] }
 greetd_ipc = { version = "0.10.3", features = ["tokio-codec"] }
 image = "0.25.10"
 lru = "0.18.0"
@@ -24,7 +25,7 @@ rustix = { version = "1.1.4", features = ["process"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0"
 shlex = "1.3.0"
-slint = { version = "1.15.1", features = ["std"] }
+slint = { version = "1.15.1", features = ["std", "gettext"] }
 tokio = { version = "1.52.1", features = ["full"] }
 toml = "1.1.2"
 tracing = "0.1.44"

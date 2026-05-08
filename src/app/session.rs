@@ -1,5 +1,6 @@
 use crate::GreeterWindow;
 use crate::utils::system::SystemSession;
+use gettextrs::gettext;
 use slint::{ComponentHandle, Image, SharedString, VecModel};
 use std::rc::Rc;
 use tracing::{info, warn};
@@ -64,7 +65,7 @@ impl Session {
     ) {
         let menu_items: Vec<crate::MenuItem> = if compositors.is_empty() {
             vec![crate::MenuItem {
-                text: SharedString::from("No sessions found"),
+                text: SharedString::from(gettext("No sessions found")),
                 icon: comp_icon.clone(),
                 trailing_text: SharedString::default(),
                 enabled: false,
@@ -83,7 +84,7 @@ impl Session {
 
         let comps_vec = if compositors.is_empty() {
             vec![crate::Compositor {
-                name: SharedString::from("None"),
+                name: SharedString::from(gettext("None")),
                 exec: SharedString::from(""),
             }]
         } else {

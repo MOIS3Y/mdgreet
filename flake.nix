@@ -56,12 +56,20 @@
           nativeBuildInputs = [
             pkgs.pkg-config
             pkgs.makeWrapper
+            pkgs.gettext
+            pkgs.slint-tr-extractor
           ];
 
           buildInputs = waylandDependencies;
 
           postInstall = ''
-            wrapProgram $out/bin/${pname} --prefix LD_LIBRARY_PATH : "${wlLibs}"
+            # Install translations
+            mkdir -p $out/share
+            cp -r $(find target -name locales -type d | head -n 1) $out/share/locale
+
+            wrapProgram $out/bin/${pname} \
+              --prefix LD_LIBRARY_PATH : "${wlLibs}" \
+              --set MDGREET_LOCALES_DIR "$out/share/locale"
           '';
 
           meta = {
@@ -81,28 +89,9 @@
           };
         };
 
-        devShells.default = pkgs.mkShell {
-          inputsFrom = [ self.packages.${system}.default ];
-
-          packages = with pkgs; [
-            # rust
-            clippy
-            rustfmt
-            rust-analyzer
-            # slint
-            slint-lsp
-            slint-viewer
-          ];
-
-          RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";
-
-          shellHook = ''
-            # Fix kvantum error on my device
-            export QT_STYLE_OVERRIDE="Fusion"
-
-            # Fix Runtime deps in development
-            export LD_LIBRARY_PATH="${wlLibs}:$LD_LIBRARY_PATH"
-          '';
+        devShells.default = import ./nix/shell.nix {
+          inherit pkgs wlLibs;
+          package = self.packages.${system}.default;
         };
       }
     )
@@ -114,7 +103,7 @@
           inherit self;
           system = "x86_64-linux";
         };
-        modules = [ ./vm.nix ];
+        modules = [ ./nix/vm.nix ];
       };
     };
 }

@@ -53,7 +53,7 @@ export component PowerBottomSheet inherits ModalBottomSheet {
         alignment: center;
 
         MaterialText {
-            text: "Power Options";
+            text: @tr("Power Options");
             style: MaterialTypography.title-medium;
             color: MaterialPalette.on-surface-variant;
             horizontal-alignment: center;
@@ -64,7 +64,7 @@ export component PowerBottomSheet inherits ModalBottomSheet {
             spacing: 32px;
 
             PowerOption {
-                text: "Sleep";
+                text: @tr("Sleep");
                 icon: @image-url("../icons/bedtime.svg");
                 clicked => {
                     root.sleep();
@@ -73,7 +73,7 @@ export component PowerBottomSheet inherits ModalBottomSheet {
             }
 
             PowerOption {
-                text: "Hibernate";
+                text: @tr("Hibernate");
                 icon: @image-url("../icons/mode_standby.svg");
                 clicked => {
                     root.hibernate();
@@ -82,7 +82,7 @@ export component PowerBottomSheet inherits ModalBottomSheet {
             }
 
             PowerOption {
-                text: "Restart";
+                text: @tr("Restart");
                 icon: @image-url("../icons/restart_alt..svg");
                 clicked => {
                     root.reboot();
@@ -91,7 +91,7 @@ export component PowerBottomSheet inherits ModalBottomSheet {
             }
 
             PowerOption {
-                text: "Shut down";
+                text: @tr("Shut down");
                 icon: @image-url("../icons/power_settings.svg");
                 clicked => {
                     root.shutdown();

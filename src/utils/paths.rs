@@ -9,6 +9,9 @@ pub const LOGIN_DEFS: &str = "/etc/login.defs";
 /// Path to the greetd environments configuration file.
 pub const GREETD_ENVIRONMENTS: &str = "/etc/greetd/environments";
 
+/// The standard system path for localized messages (translations).
+pub const SYSTEM_LOCALE_DIR: &str = "/usr/share/locale";
+
 /// Returns the default path to the configuration file.
 pub fn default_config_path() -> PathBuf {
     PathBuf::from("/etc/greetd").join(format!("{}.toml", GREETER_NAME))
