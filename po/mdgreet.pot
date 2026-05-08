@@ -12,7 +12,7 @@ msgstr ""
 "#-#-#-#-#  rust.pot (PACKAGE VERSION)  #-#-#-#-#\n"
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-08 16:36+0900\n"
+"POT-Creation-Date: 2026-05-08 18:30+0900\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -22,7 +22,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "#-#-#-#-#  slint.pot (PACKAGE VERSION)  #-#-#-#-#\n"
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2026-05-08 07:39+0000\n"
+"POT-Creation-Date: 2026-05-08 09:31+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -31,6 +31,10 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: \n"
+
+#: src/main.rs:114
+msgid "No compositor selected"
+msgstr ""
 
 #: src/app/session.rs:68
 msgid "No sessions found"
@@ -121,27 +125,27 @@ msgstr ""
 msgid "{weekday}, {month} {day}"
 msgstr ""
 
-#: src/utils/client.rs:22
+#: src/utils/client.rs:51
 msgid "GREETD_SOCK is not set. Are you running under greetd?"
 msgstr ""
 
-#: src/utils/client.rs:63 src/utils/client.rs:92
+#: src/utils/client.rs:96 src/utils/client.rs:125
 msgid "Invalid username or password"
 msgstr ""
 
-#: src/utils/client.rs:95
+#: src/utils/client.rs:128
 msgid "greetd error"
 msgstr ""
 
-#: src/utils/client.rs:124
+#: src/utils/client.rs:161
 msgid "Failed to start session"
 msgstr ""
 
-#: src/utils/client.rs:128
+#: src/utils/client.rs:165
 msgid "Unexpected AuthMessage when trying to start session"
 msgstr ""
 
-#: ui/main.slint:109
+#: ui/main.slint:117
 msgctxt "GreeterWindow"
 msgid "Press any key to unlock"
 msgstr ""

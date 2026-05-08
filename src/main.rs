@@ -7,6 +7,7 @@ mod utils;
 
 use cli::Args;
 use config::GreeterConfig;
+use gettextrs::gettext;
 use slint::{ComponentHandle, Model};
 use std::sync::{Arc, Mutex};
 use tracing::info;
@@ -110,9 +111,8 @@ async fn main() {
         };
 
         if exec_cmd.is_empty() {
-            ui.set_auth_error(slint::SharedString::from(gettextrs::gettext(
-                "No compositor selected",
-            )));
+            let msg = gettext("No compositor selected");
+            ui.set_auth_error(slint::SharedString::from(msg));
             return;
         }
 
