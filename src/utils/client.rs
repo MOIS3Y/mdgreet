@@ -4,6 +4,35 @@ use greetd_ipc::{AuthMessageType, ErrorType, Request, Response, codec::TokioCode
 use tokio::net::UnixStream;
 use tracing::{debug, error, info};
 
+#[derive(Debug)]
+pub enum ClientError {
+    Auth(String),
+    System(String),
+}
+
+impl std::fmt::Display for ClientError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ClientError::Auth(msg) => write!(f, "{}", msg),
+            ClientError::System(msg) => write!(f, "{}", msg),
+        }
+    }
+}
+
+impl std::error::Error for ClientError {}
+
+impl From<std::io::Error> for ClientError {
+    fn from(e: std::io::Error) -> Self {
+        ClientError::System(e.to_string())
+    }
+}
+
+impl From<greetd_ipc::codec::Error> for ClientError {
+    fn from(e: greetd_ipc::codec::Error) -> Self {
+        ClientError::System(e.to_string())
+    }
+}
+
 /// A client for interacting with the greetd daemon over a Unix domain socket.
 pub struct GreetdClient {
     /// The asynchronous stream connected to the greetd socket.
@@ -36,7 +65,11 @@ impl GreetdClient {
     ///
     /// Returns an error if authentication fails, the session is cancelled,
     /// or a protocol error occurs.
-    pub async fn authenticate(&mut self, username: &str, password: &str) -> Result<()> {
+    pub async fn authenticate(
+        &mut self,
+        username: &str,
+        password: &str,
+    ) -> std::result::Result<(), ClientError> {
         let mut request = Request::CreateSession {
             username: username.to_string(),
         };
@@ -61,7 +94,7 @@ impl GreetdClient {
                             if secret_prompted {
                                 let _ = Request::CancelSession.write_to(&mut self.stream).await;
                                 let msg = gettext("Invalid username or password");
-                                anyhow::bail!(msg);
+                                return Err(ClientError::Auth(msg));
                             }
                             secret_prompted = true;
                             Some(password.to_string())
@@ -90,10 +123,10 @@ impl GreetdClient {
                     let _ = Request::CancelSession.write_to(&mut self.stream).await;
                     if let ErrorType::AuthError = error_type {
                         let msg = gettext("Invalid username or password");
-                        anyhow::bail!(msg);
+                        return Err(ClientError::Auth(msg));
                     } else {
                         let prefix = gettext("greetd error");
-                        anyhow::bail!("{}: {}", prefix, description);
+                        return Err(ClientError::System(format!("{}: {}", prefix, description)));
                     }
                 }
             }
@@ -109,7 +142,11 @@ impl GreetdClient {
     ///
     /// Returns an error if the command cannot be started or if greetd
     /// returns an error response.
-    pub async fn start_session(&mut self, cmd: Vec<String>, env: Vec<String>) -> Result<()> {
+    pub async fn start_session(
+        &mut self,
+        cmd: Vec<String>,
+        env: Vec<String>,
+    ) -> std::result::Result<(), ClientError> {
         let request = Request::StartSession { cmd, env };
         request.write_to(&mut self.stream).await?;
 
@@ -122,11 +159,11 @@ impl GreetdClient {
             }
             Response::Error { description, .. } => {
                 let prefix = gettext("Failed to start session");
-                anyhow::bail!("{}: {}", prefix, description);
+                return Err(ClientError::System(format!("{}: {}", prefix, description)));
             }
             Response::AuthMessage { .. } => {
                 let msg = gettext("Unexpected AuthMessage when trying to start session");
-                anyhow::bail!(msg);
+                return Err(ClientError::System(msg));
             }
         }
     }

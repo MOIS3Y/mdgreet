@@ -150,9 +150,15 @@ async fn main() {
             match crate::utils::client::GreetdClient::new().await {
                 Ok(mut client) => {
                     if let Err(e) = client.authenticate(&username_str, &password_str).await {
-                        let err_msg = e.to_string();
                         let _ = ui_weak_async.upgrade_in_event_loop(move |ui| {
-                            ui.set_auth_error(slint::SharedString::from(err_msg));
+                            match e {
+                                crate::utils::client::ClientError::Auth(msg) => {
+                                    ui.set_auth_error(slint::SharedString::from(msg));
+                                }
+                                crate::utils::client::ClientError::System(msg) => {
+                                    ui.invoke_show_system_error(slint::SharedString::from(msg));
+                                }
+                            }
                             ui.set_is_authenticating(false);
                         });
                         return;
@@ -170,9 +176,15 @@ async fn main() {
                     let env = vec![];
 
                     if let Err(e) = client.start_session(cmd, env).await {
-                        let err_msg = e.to_string();
                         let _ = ui_weak_async.upgrade_in_event_loop(move |ui| {
-                            ui.set_auth_error(slint::SharedString::from(err_msg));
+                            match e {
+                                crate::utils::client::ClientError::Auth(msg) => {
+                                    ui.set_auth_error(slint::SharedString::from(msg));
+                                }
+                                crate::utils::client::ClientError::System(msg) => {
+                                    ui.invoke_show_system_error(slint::SharedString::from(msg));
+                                }
+                            }
                             ui.set_is_authenticating(false);
                         });
                     } else {
@@ -185,7 +197,7 @@ async fn main() {
                 Err(e) => {
                     let err_msg = e.to_string();
                     let _ = ui_weak_async.upgrade_in_event_loop(move |ui| {
-                        ui.set_auth_error(slint::SharedString::from(err_msg));
+                        ui.invoke_show_system_error(slint::SharedString::from(err_msg));
                         ui.set_is_authenticating(false);
                     });
                 }

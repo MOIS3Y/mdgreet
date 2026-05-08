@@ -8,6 +8,7 @@ import {
     MenuItem,
     IconButton,
     MaterialWindowAdapter,
+    SnackBar,
 } from "@material";
 import { Palette } from "std-widgets.slint";
 import { Clock } from "components/clock.slint";
@@ -62,6 +63,13 @@ export component GreeterWindow inherits MaterialWindow {
     // Exported statically compiled icons for Rust backend
     out property <image> default-user-icon: @image-url("icons/person.svg");
     out property <image> default-session-icon: @image-url("icons/auto_awesome_mosaic.svg");
+
+    in-out property <string> system-error-text: "";
+
+    public function show_system_error(err: string) {
+        root.system-error-text = err;
+        system_error_snack.show();
+    }
 
     callback set-color-scheme(bool);
     set-color-scheme(is-dark) => {
@@ -213,5 +221,12 @@ export component GreeterWindow inherits MaterialWindow {
             }
             reject
         }
+    }
+
+    system_error_snack := SnackBar {
+        width: root.width;
+        height: root.height;
+        text: root.system-error-text;
+        has_close_button: true;
     }
 }
