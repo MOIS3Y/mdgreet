@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: mdgreet 0.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-08 18:30+0900\n"
+"POT-Creation-Date: 2026-05-08 20:48+0900\n"
 "PO-Revision-Date: 2026-05-08 12:00+0300\n"
 "Last-Translator: Stepan Zhukovsky <stepan@zhukovsky.me>\n"
 "Language-Team: Russian\n"
@@ -17,10 +17,6 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
-
-#: src/main.rs:114
-msgid "No compositor selected"
-msgstr "Не выбран композитор"
 
 #: src/app/session.rs:68
 msgid "No sessions found"
@@ -110,6 +106,10 @@ msgstr "декабря"
 #, rust-format
 msgid "{weekday}, {month} {day}"
 msgstr "{weekday}, {day} {month}"
+
+#: src/app/login.rs:38
+msgid "No compositor selected"
+msgstr "Не выбран композитор"
 
 #: src/utils/client.rs:51
 msgid "GREETD_SOCK is not set. Are you running under greetd?"

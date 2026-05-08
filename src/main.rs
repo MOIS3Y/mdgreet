@@ -7,7 +7,6 @@ mod utils;
 
 use cli::Args;
 use config::GreeterConfig;
-use gettextrs::gettext;
 use slint::{ComponentHandle, Model};
 use std::sync::{Arc, Mutex};
 use tracing::info;
@@ -95,115 +94,7 @@ async fn main() {
         }
     });
 
-    let ui_login_weak = ui.as_weak();
-    let cache_login = cache.clone();
-    let is_demo = args.demo;
-
-    ui.on_login(move |username, password| {
-        let ui = ui_login_weak.unwrap();
-        let selected_compositor_idx = ui.get_selected_compositor_index();
-        let compositors = ui.get_compositors();
-
-        let exec_cmd = if let Some(comp) = compositors.row_data(selected_compositor_idx as usize) {
-            comp.exec.to_string()
-        } else {
-            String::new()
-        };
-
-        if exec_cmd.is_empty() {
-            let msg = gettext("No compositor selected");
-            ui.set_auth_error(slint::SharedString::from(msg));
-            return;
-        }
-
-        let username_str = username.to_string();
-        let password_str = password.to_string();
-        let exec_name = if let Some(comp) = compositors.row_data(selected_compositor_idx as usize) {
-            comp.name.to_string()
-        } else {
-            String::new()
-        };
-
-        ui.set_is_authenticating(true);
-
-        if is_demo {
-            tracing::info!(
-                "Demo mode: simulated login for user {}, compositor exec: {}",
-                username_str,
-                exec_cmd
-            );
-            // Save to cache
-            {
-                let mut cache = cache_login.lock().unwrap();
-                cache.set_last_user(username_str.clone());
-                cache.set_last_session(username_str.clone(), exec_name.clone());
-                cache.save();
-            }
-            ui.set_is_authenticating(false);
-            std::process::exit(0);
-        }
-
-        let ui_weak_async = ui_login_weak.clone();
-        let cache_async = cache_login.clone();
-
-        tokio::spawn(async move {
-            match crate::utils::client::GreetdClient::new().await {
-                Ok(mut client) => {
-                    if let Err(e) = client.authenticate(&username_str, &password_str).await {
-                        let _ = ui_weak_async.upgrade_in_event_loop(move |ui| {
-                            match e {
-                                crate::utils::client::ClientError::Auth(msg) => {
-                                    ui.set_auth_error(slint::SharedString::from(msg));
-                                }
-                                crate::utils::client::ClientError::System(msg) => {
-                                    ui.invoke_show_system_error(slint::SharedString::from(msg));
-                                }
-                            }
-                            ui.set_is_authenticating(false);
-                        });
-                        return;
-                    }
-
-                    // Save to cache
-                    {
-                        let mut cache = cache_async.lock().unwrap();
-                        cache.set_last_user(username_str.clone());
-                        cache.set_last_session(username_str.clone(), exec_name.clone());
-                        cache.save();
-                    }
-
-                    let cmd = shlex::split(&exec_cmd).unwrap_or_else(|| vec![exec_cmd]);
-                    let env = vec![];
-
-                    if let Err(e) = client.start_session(cmd, env).await {
-                        let _ = ui_weak_async.upgrade_in_event_loop(move |ui| {
-                            match e {
-                                crate::utils::client::ClientError::Auth(msg) => {
-                                    ui.set_auth_error(slint::SharedString::from(msg));
-                                }
-                                crate::utils::client::ClientError::System(msg) => {
-                                    ui.invoke_show_system_error(slint::SharedString::from(msg));
-                                }
-                            }
-                            ui.set_is_authenticating(false);
-                        });
-                    } else {
-                        let _ = ui_weak_async.upgrade_in_event_loop(move |ui| {
-                            ui.set_is_authenticating(false);
-                        });
-                        std::process::exit(0);
-                    }
-                }
-                Err(e) => {
-                    let err_msg = e.to_string();
-                    let _ = ui_weak_async.upgrade_in_event_loop(move |ui| {
-                        ui.invoke_show_system_error(slint::SharedString::from(err_msg));
-                        ui.set_is_authenticating(false);
-                    });
-                }
-            }
-        });
-    });
+    app::Login::init(&ui, cache.clone(), args.demo);
 
     ui.run().unwrap();
 }
