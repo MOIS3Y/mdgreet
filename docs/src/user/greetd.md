@@ -4,6 +4,9 @@
 
 To use `mdgreet`, you need to configure `greetd` to launch a Wayland compositor (like `cage` or `sway`), which in turn runs `mdgreet`.
 
+> [!NOTE]
+> The `mdgreet.toml` configuration file is entirely optional. If not provided, mdgreet will use sensible defaults. However, creating it is highly recommended to customize the appearance to your liking.
+
 ## NixOS Configuration
 
 If you are using NixOS, configuring `greetd` to use `mdgreet` is straightforward. Here is an example configuration using `cage` as the Wayland compositor for the greeter:
@@ -12,11 +15,25 @@ If you are using NixOS, configuring `greetd` to use `mdgreet` is straightforward
 { config, pkgs, ... }:
 
 let
-  # Assuming mdgreet is available in your pkgs, e.g., via an overlay or flake input
-  mdgreetPkg = pkgs.mdgreet; 
+  # Assuming mdgreet is available in your pkgs
+  mdgreetPkg = pkgs.mdgreet;
+
+  # Define your mdgreet configuration as a Nix attribute set
+  mdgreetConfig = {
+    appearance = {
+      greeting = "Welcome to NixOS!";
+      theme.mode = "dark";
+      theme.name = "auto";
+      background.blur = 15.0;
+    };
+  };
 in
 {
-  # Make sure greetd has the necessary directories
+  # 1. Generate the TOML configuration file declaratively
+  environment.etc."greetd/mdgreet.toml".source =
+    (pkgs.formats.toml {}).generate "mdgreet.toml" mdgreetConfig;
+
+  # 2. Make sure greetd has the necessary directories
   systemd.tmpfiles.settings."10-mdgreet" = {
     "/var/cache/mdgreet".d = {
       mode = "0755";
@@ -30,25 +47,28 @@ in
     };
   };
 
+  # 3. Configure the greetd service
   services.greetd = {
     enable = true;
     settings = {
       default_session = {
-        # Launch cage, which then launches mdgreet
         command = "${pkgs.cage}/bin/cage -s -- ${mdgreetPkg}/bin/mdgreet";
         user = "greeter";
       };
     };
   };
 
-  # Required for greetd and Wayland
   environment.systemPackages = with pkgs; [ cage dbus ];
 }
 ```
 
 ## Standard Linux Configuration
 
-If you are configuring `greetd` manually on a non-NixOS distribution, edit your `/etc/greetd/config.toml`:
+If you are configuring `greetd` manually on a non-NixOS distribution:
+
+### 1. Configure greetd
+
+Edit your `/etc/greetd/config.toml`:
 
 ```toml
 [terminal]
@@ -66,4 +86,13 @@ command = "cage -s -- mdgreet"
 user = "greeter"
 ```
 
-Make sure the `greeter` user has permission to access the display server and read the `mdgreet` configuration file (usually placed at `/etc/greetd/mdgreet.toml`).
+### 2. Create mdgreet Configuration
+
+Create the configuration file at `/etc/greetd/mdgreet.toml`:
+
+```toml
+[appearance]
+greeting = "Welcome!"
+```
+
+Make sure the `greeter` user has permission to read this file.
