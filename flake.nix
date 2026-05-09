@@ -39,7 +39,14 @@
         wlLibs = lib.makeLibraryPath waylandDependencies;
 
         # dev test VM
-        vmConfig = self.nixosConfigurations.vm.config;
+        vm = nixpkgs.lib.nixosSystem {
+          inherit system;
+          specialArgs = {
+            inherit self system;
+          };
+          modules = [ ./nix/vm.nix ];
+        };
+        vmConfig = vm.config;
         vmBuildDir = vmConfig.system.build.vm;
         vmHostName = vmConfig.networking.hostName;
       in
@@ -94,16 +101,5 @@
           package = self.packages.${system}.default;
         };
       }
-    )
-    // {
-      # NixOS configurations must be outside of eachDefaultSystem
-      nixosConfigurations.vm = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-        specialArgs = {
-          inherit self;
-          system = "x86_64-linux";
-        };
-        modules = [ ./nix/vm.nix ];
-      };
-    };
+    );
 }
