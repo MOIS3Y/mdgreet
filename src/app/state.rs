@@ -20,22 +20,11 @@ impl State {
         {
             let mut cache_lock = cache.lock().unwrap();
             if let Some(last_user) = cache_lock.last_user.clone() {
-                if let Some(pos) = users_data
-                    .iter()
-                    .position(|u| u.user_name.as_str() == last_user)
-                {
+                if let Some(pos) = users_data.iter().position(|u| u.user_name == last_user) {
                     ui.set_selected_user_index(pos as i32);
 
-                    if let Some(last_sess) = cache_lock.get_last_session(&last_user).cloned() {
-                        let compositors = ui.get_compositors();
-                        for i in 0..compositors.row_count() {
-                            if let Some(c) = compositors.row_data(i) {
-                                if c.name.as_str() == last_sess {
-                                    ui.set_selected_compositor_index(i as i32);
-                                    break;
-                                }
-                            }
-                        }
+                    if let Some(last_sess) = cache_lock.get_last_session(&last_user) {
+                        Self::set_compositor_by_name(ui, last_sess);
                     }
                 }
             }
@@ -47,27 +36,30 @@ impl State {
         let ui_weak = ui.as_weak();
 
         ui.on_user_selected(move |idx| {
-            if idx < 0 {
+            let Ok(idx) = usize::try_from(idx) else {
                 return;
-            }
-            if let Some(user) = users_data_persistence.get(idx as usize) {
-                let mut cache_lock = cache_ui.lock().unwrap();
-                let username = user.user_name.to_string();
+            };
 
-                if let Some(last_sess) = cache_lock.get_last_session(&username).cloned() {
+            if let Some(user) = users_data_persistence.get(idx) {
+                let mut cache_lock = cache_ui.lock().unwrap();
+                if let Some(last_sess) = cache_lock.get_last_session(&user.user_name) {
                     if let Some(ui) = ui_weak.upgrade() {
-                        let compositors = ui.get_compositors();
-                        for i in 0..compositors.row_count() {
-                            if let Some(c) = compositors.row_data(i) {
-                                if c.name.as_str() == last_sess {
-                                    ui.set_selected_compositor_index(i as i32);
-                                    break;
-                                }
-                            }
-                        }
+                        Self::set_compositor_by_name(&ui, last_sess);
                     }
                 }
             }
         });
+    }
+
+    /// Selects the compositor in the UI dropdown that matches the given name.
+    fn set_compositor_by_name(ui: &GreeterWindow, target_session: &str) {
+        let compositors = ui.get_compositors();
+        if let Some(index) = (0..compositors.row_count()).find(|&i| {
+            compositors
+                .row_data(i)
+                .is_some_and(|c| c.name == target_session)
+        }) {
+            ui.set_selected_compositor_index(index as i32);
+        }
     }
 }
