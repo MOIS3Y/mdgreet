@@ -14,10 +14,14 @@ mdgreet is a fast, visually appealing, and highly customizable login screen for 
 
 ## Interface Preview
 
-*Here you will see the beautiful clock and background.*
+*The main screen featuring a clean Material Design 3 clock.*
 
-> **[Placeholder: Insert screenshot of the main screen with the clock and background here]**
+![Main Screen](./assets/main-screen.png)
 
-*Here is the login card in action.*
+*The login card with smooth background blur transition.*
 
-> **[Placeholder: Insert screenshot of the login/authentication card here]**
+![Login Screen](./assets/login-screen.png)
+
+*Integrated power management menu.*
+
+![Power Menu](./assets/power-menu.png)
