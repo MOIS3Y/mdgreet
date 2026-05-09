@@ -9,6 +9,7 @@
     - [Appearance](./user/config/appearance.md)
     - [Theming](./user/config/themes.md)
     - [Background](./user/config/background.md)
+    - [Power Management](./user/config/power.md)
 
 # Development
 - [Setting up Environment](./dev/setup.md)

@@ -58,4 +58,10 @@ name = "custom"
 path = "/etc/greetd/my-mdgreet-theme.json"
 ```
 
-> **Note:** The JSON file must follow the structure expected by mdgreet's internal `MaterialScheme` struct.
+> [!NOTE]
+> The JSON file must follow the structure expected by mdgreet's internal `MaterialScheme` struct.
+
+> [!TIP]
+> **Generating a Custom Theme:** You can easily generate a compatible JSON file using the official [Material Theme Builder](https://material-foundation.github.io/material-theme-builder/). Simply design your theme there and export it as JSON.
+> 
+> *Note:* mdgreet fully supports the standard `light` and `dark` color schemes exported by the tool. High-contrast themes are not currently supported by the underlying library and will be safely ignored if present in the JSON file.

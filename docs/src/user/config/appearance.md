@@ -36,4 +36,5 @@ font_size = 200
 font_weight = 600
 ```
 
-*Note: If no font is specified, mdgreet uses its bundled standard fonts.*
+> [!NOTE]
+> If no font is specified, mdgreet uses its bundled font specifically for the clock. The rest of the interface will automatically fall back to your system's default sans-serif font.
