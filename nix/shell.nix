@@ -18,6 +18,9 @@ pkgs.mkShell {
     # slint
     slint-lsp
     slint-viewer
+
+    # docs
+    mdbook
   ] ++ i18nTools;
 
   RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";

@@ -1,0 +1,12 @@
+[book]
+authors = ["Stepan Zhukovsky"]
+language = "en"
+src = "src"
+title = "MDGreet Documentation"
+
+[output.html]
+git-repository-url = "https://github.com/MOIS3Y/mdgreet"
+edit-url-template = "https://github.com/MOIS3Y/mdgreet/edit/main/docs/{path}"
+preferred-dark-theme = "macchiato"
+additional-css = ["theme/catppuccin.css"]
+theme = "theme"

@@ -47,3 +47,6 @@ mdgreet-test-vm.qcow2
 po/*.po~
 po/*.mo
 po/*.gmo
+
+# Documentation
+docs/book/
