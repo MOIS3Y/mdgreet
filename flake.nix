@@ -100,6 +100,10 @@
           inherit pkgs wlLibs;
           package = self.packages.${system}.default;
         };
+
+        devShells.docs = pkgs.mkShell {
+          packages = [ pkgs.mdbook ];
+        };
       }
     );
 }

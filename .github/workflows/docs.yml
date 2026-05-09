@@ -38,7 +38,7 @@ jobs:
         uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Build mdBook
-        run: nix develop --command mdbook build docs
+        run: nix develop .#docs --command mdbook build docs
 
       - name: Setup Pages
         uses: actions/configure-pages@v6
