@@ -77,7 +77,7 @@ impl Default for ClockConfig {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppearanceConfig {
     /// Greeting message displayed on the login card.
-    pub label: Option<String>,
+    pub greeting: Option<String>,
     /// Global UI font family.
     pub font_family: Option<String>,
     /// Transparency level (0.0 to 1.0).
@@ -96,7 +96,7 @@ pub struct AppearanceConfig {
 impl Default for AppearanceConfig {
     fn default() -> Self {
         Self {
-            label: Some("Welcome!".to_string()),
+            greeting: Some("Welcome!".to_string()),
             font_family: None,
             opacity: Some(0.7),
             clock: ClockConfig::default(),

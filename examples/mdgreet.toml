@@ -3,7 +3,7 @@
 [appearance]
 # The greeting message displayed above the avatar on the login card
 # Default: "Welcome!"
-label = "Welcome!"
+greeting = "Welcome!"
 
 # Opacity of the login card and power menu (0.0 to 1.0)
 # Set to 1.0 to disable transparency

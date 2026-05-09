@@ -156,10 +156,19 @@ pub struct Appearance;
 impl Appearance {
     /// Initializes the UI appearance based on the configuration.
     pub fn init(ui: &crate::GreeterWindow, config: &crate::config::GreeterConfig) {
+        let theme = Self::resolve_theme(config);
+
+        Self::apply_theme(ui, config, &theme);
+        Self::apply_typography_and_layout(ui, &config.appearance);
+        Self::apply_background(ui, config, &theme);
+    }
+
+    /// Determines and loads the appropriate theme based on configuration mode.
+    fn resolve_theme(config: &crate::config::GreeterConfig) -> MaterialTheme {
         let app_config = &config.appearance;
-        // 1. Initialize Theme
         let theme_name = &app_config.theme.name;
-        let theme = match theme_name.as_str() {
+
+        match theme_name.as_str() {
             "custom" => {
                 if let Some(theme_path) = &app_config.theme.path {
                     Self::load_custom_theme(&theme_path.to_string_lossy())
@@ -204,15 +213,28 @@ impl Appearance {
             }
             name => Self::load_builtin_theme(name)
                 .unwrap_or_else(|| Self::load_builtin_theme("default").unwrap()),
-        };
+        }
+    }
 
-        Self::apply(ui, &theme);
+    /// Applies the loaded theme and system color scheme to the UI.
+    fn apply_theme(
+        ui: &crate::GreeterWindow,
+        config: &crate::config::GreeterConfig,
+        theme: &MaterialTheme,
+    ) {
+        Self::apply(ui, theme);
         ui.invoke_set_color_scheme(config.is_dark_mode());
 
-        if let Some(label) = &app_config.label {
-            ui.set_greeting_msg(slint::SharedString::from(label));
+        if let Some(greeting) = &config.appearance.greeting {
+            ui.set_greeting_msg(slint::SharedString::from(greeting));
         }
+    }
 
+    /// Applies typography, fonts, opacity, and other layout settings.
+    fn apply_typography_and_layout(
+        ui: &crate::GreeterWindow,
+        app_config: &crate::config::AppearanceConfig,
+    ) {
         let app_style = ui.global::<crate::AppStyle>();
 
         if let Some(opacity) = app_config.opacity {
@@ -230,8 +252,15 @@ impl Appearance {
         if let Some(clock_size) = app_config.clock.font_size {
             app_style.set_clock_font_size(clock_size);
         }
+    }
 
-        // 2. Initialize Background
+    /// Initializes and applies the background color or wallpaper.
+    fn apply_background(
+        ui: &crate::GreeterWindow,
+        config: &crate::config::GreeterConfig,
+        theme: &MaterialTheme,
+    ) {
+        let app_config = &config.appearance;
         let bg_config = &app_config.background;
 
         let fallback_color = if let Some(hex) = &bg_config.color {
@@ -300,55 +329,44 @@ impl Appearance {
                 .unwrap_or_default(),
         };
 
-        let is_valid = if meta_path.exists() && theme_path.exists() {
-            if let Ok(meta_content) = fs::read_to_string(&meta_path) {
-                if let Ok(cached_meta) = toml::from_str::<ThemeMetadata>(&meta_content) {
-                    cached_meta == current_meta
-                } else {
-                    false
-                }
-            } else {
-                false
-            }
-        } else {
-            false
-        };
+        let is_valid = fs::read_to_string(&meta_path)
+            .ok()
+            .and_then(|content| toml::from_str::<ThemeMetadata>(&content).ok())
+            .is_some_and(|cached| cached == current_meta);
 
         if is_valid {
-            if let Ok(theme_content) = fs::read_to_string(&theme_path) {
-                if let Ok(theme) = serde_json::from_str(&theme_content) {
-                    return Some(theme);
-                }
+            if let Some(theme) = fs::read_to_string(&theme_path)
+                .ok()
+                .and_then(|content| serde_json::from_str(&content).ok())
+            {
+                return Some(theme);
             }
         }
 
         info!("Generating dynamic theme (mode: {})", current_meta.mode);
 
-        let argb = if current_meta.mode == "seed" {
-            if let Ok(c) = current_meta.seed_color.parse::<css_color_parser2::Color>() {
-                Argb::new((c.a * 255.) as u8, c.r, c.g, c.b)
-            } else {
-                return None;
-            }
-        } else {
-            if !wallpaper_path.is_empty() {
-                match utils::image::extract_seed_color(wallpaper_path) {
-                    Ok([r, g, b, a]) => Argb::new(a, r, g, b),
-                    Err(_) => return None,
-                }
-            } else {
-                return None;
-            }
+        let argb = match current_meta.mode.as_str() {
+            "seed" => current_meta
+                .seed_color
+                .parse::<css_color_parser2::Color>()
+                .ok()
+                .map(|c| Argb::new((c.a * 255.) as u8, c.r, c.g, c.b))?,
+            _ if !wallpaper_path.is_empty() => utils::image::extract_seed_color(wallpaper_path)
+                .ok()
+                .map(|[r, g, b, a]| Argb::new(a, r, g, b))?,
+            _ => return None,
         };
 
         let theme = Self::generate_from_seed(argb);
 
-        if let Ok(theme_json) = serde_json::to_string_pretty(&theme) {
-            let _ = fs::create_dir_all(&cache_dir);
-            let _ = fs::write(&theme_path, theme_json);
-            if let Ok(meta_toml) = toml::to_string_pretty(&current_meta) {
-                let _ = fs::write(&meta_path, meta_toml);
-            }
+        // Best-effort caching
+        if let (Ok(theme_json), Ok(meta_toml)) = (
+            serde_json::to_string_pretty(&theme),
+            toml::to_string_pretty(&current_meta),
+        ) {
+            let _ = fs::create_dir_all(&cache_dir)
+                .and_then(|_| fs::write(&theme_path, theme_json))
+                .and_then(|_| fs::write(&meta_path, meta_toml));
         }
 
         Some(theme)
