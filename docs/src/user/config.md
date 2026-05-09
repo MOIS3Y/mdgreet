@@ -32,6 +32,8 @@ font_weight = 700
 # "default", "slint", "auto", "seed", or "custom"
 name = "auto"
 mode = "dark"
+seed_color = "#1e66f5" # Used only if name = "seed"
+# path = "/etc/greetd/my-mdgreet-theme.json" # Used only if name = "custom"
 
 [appearance.background]
 path = "/usr/share/backgrounds/my-wallpaper.jpg"
@@ -44,8 +46,16 @@ reboot = "systemctl reboot"
 sleep = "systemctl suspend"
 hibernate = "systemctl hibernate"
 
+# --- Advanced / Technical Settings ---
+# These settings are primarily for debugging or environments with non-standard paths.
+# Most users can safely omit these blocks.
+
 [logging]
 level = "info"
+# path = "/var/log/mdgreet/mdgreet.log"
+
+[cache]
+# path = "/var/cache/mdgreet"
 ```
 
 Navigate through the subsections to learn more about specific configuration blocks.
