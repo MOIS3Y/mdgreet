@@ -9,154 +9,93 @@ use std::path::Path;
 use std::time::UNIX_EPOCH;
 use tracing::{info, warn};
 
-/// Internal representation of a Material Design color scheme.
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub(crate) struct MaterialScheme {
-    pub primary: String,
-    #[serde(rename = "surfaceTint")]
-    pub surface_tint: String,
-    #[serde(rename = "onPrimary")]
-    pub on_primary: String,
-    #[serde(rename = "primaryContainer")]
-    pub primary_container: String,
-    #[serde(rename = "onPrimaryContainer")]
-    pub on_primary_container: String,
-    pub secondary: String,
-    #[serde(rename = "onSecondary")]
-    pub on_secondary: String,
-    #[serde(rename = "secondaryContainer")]
-    pub secondary_container: String,
-    #[serde(rename = "onSecondaryContainer")]
-    pub on_secondary_container: String,
-    pub tertiary: String,
-    #[serde(rename = "onTertiary")]
-    pub on_tertiary: String,
-    #[serde(rename = "tertiaryContainer")]
-    pub tertiary_container: String,
-    #[serde(rename = "onTertiaryContainer")]
-    pub on_tertiary_container: String,
-    pub error: String,
-    #[serde(rename = "onError")]
-    pub on_error: String,
-    #[serde(rename = "errorContainer")]
-    pub error_container: String,
-    #[serde(rename = "onErrorContainer")]
-    pub on_error_container: String,
-    pub background: String,
-    #[serde(rename = "onBackground")]
-    pub on_background: String,
-    pub surface: String,
-    #[serde(rename = "onSurface")]
-    pub on_surface: String,
-    #[serde(rename = "surfaceVariant")]
-    pub surface_variant: String,
-    #[serde(rename = "onSurfaceVariant")]
-    pub on_surface_variant: String,
-    pub outline: String,
-    #[serde(rename = "outlineVariant")]
-    pub outline_variant: String,
-    pub shadow: String,
-    pub scrim: String,
-    #[serde(rename = "inverseSurface")]
-    pub inverse_surface: String,
-    #[serde(rename = "inverseOnSurface")]
-    pub inverse_on_surface: String,
-    #[serde(rename = "inversePrimary")]
-    pub inverse_primary: String,
-    #[serde(rename = "primaryFixed")]
-    pub primary_fixed: String,
-    #[serde(rename = "onPrimaryFixed")]
-    pub on_primary_fixed: String,
-    #[serde(rename = "primaryFixedDim")]
-    pub primary_fixed_dim: String,
-    #[serde(rename = "onPrimaryFixedVariant")]
-    pub on_primary_fixed_variant: String,
-    #[serde(rename = "secondaryFixed")]
-    pub secondary_fixed: String,
-    #[serde(rename = "onSecondaryFixed")]
-    pub on_secondary_fixed: String,
-    #[serde(rename = "secondaryFixedDim")]
-    pub secondary_fixed_dim: String,
-    #[serde(rename = "onSecondaryFixedVariant")]
-    pub on_secondary_fixed_variant: String,
-    #[serde(rename = "tertiaryFixed")]
-    pub tertiary_fixed: String,
-    #[serde(rename = "onTertiaryFixed")]
-    pub on_tertiary_fixed: String,
-    #[serde(rename = "tertiaryFixedDim")]
-    pub tertiary_fixed_dim: String,
-    #[serde(rename = "onTertiaryFixedVariant")]
-    pub on_tertiary_fixed_variant: String,
-    #[serde(rename = "surfaceDim")]
-    pub surface_dim: String,
-    #[serde(rename = "surfaceBright")]
-    pub surface_bright: String,
-    #[serde(rename = "surfaceContainerLowest")]
-    pub surface_container_lowest: String,
-    #[serde(rename = "surfaceContainerLow")]
-    pub surface_container_low: String,
-    #[serde(rename = "surfaceContainer")]
-    pub surface_container: String,
-    #[serde(rename = "surfaceContainerHigh")]
-    pub surface_container_high: String,
-    #[serde(rename = "surfaceContainerHighest")]
-    pub surface_container_highest: String,
+macro_rules! define_material_scheme {
+    (
+        $(
+            $rust_field:ident => $slint_field:ident from $m3_field:ident
+        ),* $(,)?
+    ) => {
+        /// Internal representation of a Material Design color scheme.
+        #[derive(Serialize, Deserialize, Debug, Clone)]
+        #[serde(rename_all = "camelCase")]
+        pub(crate) struct MaterialScheme {
+            $(
+                pub $rust_field: String,
+            )*
+        }
+
+        impl From<MaterialScheme> for crate::MaterialScheme {
+            fn from(val: MaterialScheme) -> Self {
+                crate::MaterialScheme {
+                    $(
+                        $slint_field: string_to_color(val.$rust_field),
+                    )*
+                }
+            }
+        }
+
+        impl MaterialScheme {
+            fn from_m3(s: material_colors::scheme::Scheme) -> Self {
+                Self {
+                    $(
+                        $rust_field: argb_to_hex(s.$m3_field),
+                    )*
+                }
+            }
+        }
+    };
 }
 
-impl From<MaterialScheme> for crate::MaterialScheme {
-    fn from(val: MaterialScheme) -> Self {
-        crate::MaterialScheme {
-            primary: string_to_color(val.primary),
-            surfaceTint: string_to_color(val.surface_tint),
-            onPrimary: string_to_color(val.on_primary),
-            primaryContainer: string_to_color(val.primary_container),
-            onPrimaryContainer: string_to_color(val.on_primary_container),
-            secondary: string_to_color(val.secondary),
-            onSecondary: string_to_color(val.on_secondary),
-            secondaryContainer: string_to_color(val.secondary_container),
-            onSecondaryContainer: string_to_color(val.on_secondary_container),
-            tertiary: string_to_color(val.tertiary),
-            onTertiary: string_to_color(val.on_tertiary),
-            tertiaryContainer: string_to_color(val.tertiary_container),
-            onTertiaryContainer: string_to_color(val.on_tertiary_container),
-            error: string_to_color(val.error),
-            onError: string_to_color(val.on_error),
-            errorContainer: string_to_color(val.error_container),
-            onErrorContainer: string_to_color(val.on_error_container),
-            background: string_to_color(val.background),
-            onBackground: string_to_color(val.on_background),
-            surface: string_to_color(val.surface),
-            onSurface: string_to_color(val.on_surface),
-            surfaceVariant: string_to_color(val.surface_variant),
-            onSurfaceVariant: string_to_color(val.on_surface_variant),
-            outline: string_to_color(val.outline),
-            outlineVariant: string_to_color(val.outline_variant),
-            shadow: string_to_color(val.shadow),
-            scrim: string_to_color(val.scrim),
-            inverseSurface: string_to_color(val.inverse_surface),
-            inverseOnSurface: string_to_color(val.inverse_on_surface),
-            inversePrimary: string_to_color(val.inverse_primary),
-            primaryFixed: string_to_color(val.primary_fixed),
-            onPrimaryFixed: string_to_color(val.on_primary_fixed),
-            primaryFixedDim: string_to_color(val.primary_fixed_dim),
-            onPrimaryFixedVariant: string_to_color(val.on_primary_fixed_variant),
-            secondaryFixed: string_to_color(val.secondary_fixed),
-            onSecondaryFixed: string_to_color(val.on_secondary_fixed),
-            secondaryFixedDim: string_to_color(val.secondary_fixed_dim),
-            onSecondaryFixedVariant: string_to_color(val.on_secondary_fixed_variant),
-            tertiaryFixed: string_to_color(val.tertiary_fixed),
-            onTertiaryFixed: string_to_color(val.on_tertiary_fixed),
-            tertiaryFixedDim: string_to_color(val.tertiary_fixed_dim),
-            onTertiaryFixedVariant: string_to_color(val.on_tertiary_fixed_variant),
-            surfaceDim: string_to_color(val.surface_dim),
-            surfaceBright: string_to_color(val.surface_bright),
-            surfaceContainerLowest: string_to_color(val.surface_container_lowest),
-            surfaceContainerLow: string_to_color(val.surface_container_low),
-            surfaceContainer: string_to_color(val.surface_container),
-            surfaceContainerHigh: string_to_color(val.surface_container_high),
-            surfaceContainerHighest: string_to_color(val.surface_container_highest),
-        }
-    }
+define_material_scheme! {
+    primary => primary from primary,
+    surface_tint => surfaceTint from primary,
+    on_primary => onPrimary from on_primary,
+    primary_container => primaryContainer from primary_container,
+    on_primary_container => onPrimaryContainer from on_primary_container,
+    secondary => secondary from secondary,
+    on_secondary => onSecondary from on_secondary,
+    secondary_container => secondaryContainer from secondary_container,
+    on_secondary_container => onSecondaryContainer from on_secondary_container,
+    tertiary => tertiary from tertiary,
+    on_tertiary => onTertiary from on_tertiary,
+    tertiary_container => tertiaryContainer from tertiary_container,
+    on_tertiary_container => onTertiaryContainer from on_tertiary_container,
+    error => error from error,
+    on_error => onError from on_error,
+    error_container => errorContainer from error_container,
+    on_error_container => onErrorContainer from on_error_container,
+    background => background from background,
+    on_background => onBackground from on_background,
+    surface => surface from surface,
+    on_surface => onSurface from on_surface,
+    surface_variant => surfaceVariant from surface_variant,
+    on_surface_variant => onSurfaceVariant from on_surface_variant,
+    outline => outline from outline,
+    outline_variant => outlineVariant from outline_variant,
+    shadow => shadow from shadow,
+    scrim => scrim from scrim,
+    inverse_surface => inverseSurface from inverse_surface,
+    inverse_on_surface => inverseOnSurface from inverse_on_surface,
+    inverse_primary => inversePrimary from inverse_primary,
+    primary_fixed => primaryFixed from primary,
+    on_primary_fixed => onPrimaryFixed from on_primary,
+    primary_fixed_dim => primaryFixedDim from primary,
+    on_primary_fixed_variant => onPrimaryFixedVariant from on_primary,
+    secondary_fixed => secondaryFixed from secondary,
+    on_secondary_fixed => onSecondaryFixed from on_secondary,
+    secondary_fixed_dim => secondaryFixedDim from secondary,
+    on_secondary_fixed_variant => onSecondaryFixedVariant from on_secondary_fixed_variant,
+    tertiary_fixed => tertiaryFixed from tertiary,
+    on_tertiary_fixed => onTertiaryFixed from on_tertiary,
+    tertiary_fixed_dim => tertiaryFixedDim from tertiary,
+    on_tertiary_fixed_variant => onTertiaryFixedVariant from on_tertiary_fixed_variant,
+    surface_dim => surfaceDim from surface,
+    surface_bright => surfaceBright from surface_bright,
+    surface_container_lowest => surfaceContainerLowest from surface_container_lowest,
+    surface_container_low => surfaceContainerLow from surface_container_low,
+    surface_container => surfaceContainer from surface_container,
+    surface_container_high => surfaceContainerHigh from surface_container_high,
+    surface_container_highest => surfaceContainerHighest from surface_container_highest,
 }
 
 /// Container for both dark and light color schemes.
@@ -418,65 +357,10 @@ impl Appearance {
     /// Creates a full Material Theme from a source ARGB seed color.
     fn generate_from_seed(seed: Argb) -> MaterialTheme {
         let m3_theme = ThemeBuilder::with_source(seed).build();
-        let light = Self::map_m3_scheme(m3_theme.schemes.light);
-        let dark = Self::map_m3_scheme(m3_theme.schemes.dark);
+        let light = MaterialScheme::from_m3(m3_theme.schemes.light);
+        let dark = MaterialScheme::from_m3(m3_theme.schemes.dark);
         MaterialTheme {
             schemes: MaterialSchemes { light, dark },
-        }
-    }
-
-    /// Maps a raw material-colors Scheme to our internal MaterialScheme.
-    fn map_m3_scheme(s: material_colors::scheme::Scheme) -> MaterialScheme {
-        MaterialScheme {
-            primary: argb_to_hex(s.primary),
-            surface_tint: argb_to_hex(s.primary),
-            on_primary: argb_to_hex(s.on_primary),
-            primary_container: argb_to_hex(s.primary_container),
-            on_primary_container: argb_to_hex(s.on_primary_container),
-            secondary: argb_to_hex(s.secondary),
-            on_secondary: argb_to_hex(s.on_secondary),
-            secondary_container: argb_to_hex(s.secondary_container),
-            on_secondary_container: argb_to_hex(s.on_secondary_container),
-            tertiary: argb_to_hex(s.tertiary),
-            on_tertiary: argb_to_hex(s.on_tertiary),
-            tertiary_container: argb_to_hex(s.tertiary_container),
-            on_tertiary_container: argb_to_hex(s.on_tertiary_container),
-            error: argb_to_hex(s.error),
-            on_error: argb_to_hex(s.on_error),
-            error_container: argb_to_hex(s.error_container),
-            on_error_container: argb_to_hex(s.on_error_container),
-            background: argb_to_hex(s.background),
-            on_background: argb_to_hex(s.on_background),
-            surface: argb_to_hex(s.surface),
-            on_surface: argb_to_hex(s.on_surface),
-            surface_variant: argb_to_hex(s.surface_variant),
-            on_surface_variant: argb_to_hex(s.on_surface_variant),
-            outline: argb_to_hex(s.outline),
-            outline_variant: argb_to_hex(s.outline_variant),
-            shadow: argb_to_hex(s.shadow),
-            scrim: argb_to_hex(s.scrim),
-            inverse_surface: argb_to_hex(s.inverse_surface),
-            inverse_on_surface: argb_to_hex(s.inverse_on_surface),
-            inverse_primary: argb_to_hex(s.inverse_primary),
-            primary_fixed: argb_to_hex(s.primary),
-            on_primary_fixed: argb_to_hex(s.on_primary),
-            primary_fixed_dim: argb_to_hex(s.primary),
-            on_primary_fixed_variant: argb_to_hex(s.on_primary),
-            secondary_fixed: argb_to_hex(s.secondary),
-            on_secondary_fixed: argb_to_hex(s.on_secondary),
-            secondary_fixed_dim: argb_to_hex(s.secondary),
-            on_secondary_fixed_variant: argb_to_hex(s.on_secondary_fixed_variant),
-            tertiary_fixed: argb_to_hex(s.tertiary),
-            on_tertiary_fixed: argb_to_hex(s.on_tertiary),
-            tertiary_fixed_dim: argb_to_hex(s.tertiary),
-            on_tertiary_fixed_variant: argb_to_hex(s.on_tertiary_fixed_variant),
-            surface_dim: argb_to_hex(s.surface),
-            surface_bright: argb_to_hex(s.surface_bright),
-            surface_container_lowest: argb_to_hex(s.surface_container_lowest),
-            surface_container_low: argb_to_hex(s.surface_container_low),
-            surface_container: argb_to_hex(s.surface_container),
-            surface_container_high: argb_to_hex(s.surface_container_high),
-            surface_container_highest: argb_to_hex(s.surface_container_highest),
         }
     }
 
@@ -500,5 +384,124 @@ impl Appearance {
     pub fn apply(ui: &crate::GreeterWindow, theme: &MaterialTheme) {
         let schemes: crate::MaterialSchemes = theme.schemes.clone().into();
         ui.global::<crate::MaterialPalette>().set_schemes(schemes);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_string_to_color() {
+        let color = string_to_color("#ff0000".to_string());
+        assert_eq!(color.red(), 255);
+        assert_eq!(color.green(), 0);
+        assert_eq!(color.blue(), 0);
+        assert_eq!(color.alpha(), 255);
+
+        let color_with_alpha = string_to_color("rgba(255, 0, 0, 0.5)".to_string());
+        assert_eq!(color_with_alpha.red(), 255);
+        assert_eq!(color_with_alpha.green(), 0);
+        assert_eq!(color_with_alpha.blue(), 0);
+        assert_eq!(color_with_alpha.alpha(), 127); // 0.5 * 255 is 127
+
+        let invalid = string_to_color("invalid".to_string());
+        assert_eq!(invalid.red(), 0);
+        assert_eq!(invalid.green(), 0);
+        assert_eq!(invalid.blue(), 0);
+        assert_eq!(invalid.alpha(), 255);
+    }
+
+    #[test]
+    fn test_argb_to_hex() {
+        let argb = Argb::new(255, 255, 128, 64);
+        assert_eq!(argb_to_hex(argb), "#ff8040");
+    }
+
+    #[test]
+    fn test_material_scheme_macro() {
+        // Test parsing from material_colors scheme
+        let mut m3_scheme = ThemeBuilder::with_source(Argb::new(255, 0, 0, 0))
+            .build()
+            .schemes
+            .light;
+        m3_scheme.primary = Argb::new(255, 10, 20, 30);
+        m3_scheme.on_primary = Argb::new(255, 40, 50, 60);
+
+        // Ensure primary was successfully overridden
+        let scheme = MaterialScheme::from_m3(m3_scheme);
+        assert_eq!(scheme.primary, "#0a141e");
+        assert_eq!(scheme.on_primary, "#28323c");
+
+        // Test From trait mapping to crate::MaterialScheme
+        let crate_scheme: crate::MaterialScheme = scheme.into();
+        assert_eq!(crate_scheme.primary.red(), 10);
+        assert_eq!(crate_scheme.primary.green(), 20);
+        assert_eq!(crate_scheme.primary.blue(), 30);
+        assert_eq!(crate_scheme.primary.alpha(), 255);
+
+        // Test serde serialization names (camelCase)
+        let json_str = r##"{
+            "primary": "#0a141e",
+            "surfaceTint": "#0a141e",
+            "onPrimary": "#28323c",
+            "primaryContainer": "#000000",
+            "onPrimaryContainer": "#000000",
+            "secondary": "#000000",
+            "onSecondary": "#000000",
+            "secondaryContainer": "#000000",
+            "onSecondaryContainer": "#000000",
+            "tertiary": "#000000",
+            "onTertiary": "#000000",
+            "tertiaryContainer": "#000000",
+            "onTertiaryContainer": "#000000",
+            "error": "#000000",
+            "onError": "#000000",
+            "errorContainer": "#000000",
+            "onErrorContainer": "#000000",
+            "background": "#000000",
+            "onBackground": "#000000",
+            "surface": "#000000",
+            "onSurface": "#000000",
+            "surfaceVariant": "#000000",
+            "onSurfaceVariant": "#000000",
+            "outline": "#000000",
+            "outlineVariant": "#000000",
+            "shadow": "#000000",
+            "scrim": "#000000",
+            "inverseSurface": "#000000",
+            "inverseOnSurface": "#000000",
+            "inversePrimary": "#000000",
+            "primaryFixed": "#000000",
+            "onPrimaryFixed": "#000000",
+            "primaryFixedDim": "#000000",
+            "onPrimaryFixedVariant": "#000000",
+            "secondaryFixed": "#000000",
+            "onSecondaryFixed": "#000000",
+            "secondaryFixedDim": "#000000",
+            "onSecondaryFixedVariant": "#000000",
+            "tertiaryFixed": "#000000",
+            "onTertiaryFixed": "#000000",
+            "tertiaryFixedDim": "#000000",
+            "onTertiaryFixedVariant": "#000000",
+            "surfaceDim": "#000000",
+            "surfaceBright": "#000000",
+            "surfaceContainerLowest": "#000000",
+            "surfaceContainerLow": "#000000",
+            "surfaceContainer": "#000000",
+            "surfaceContainerHigh": "#000000",
+            "surfaceContainerHighest": "#000000"
+        }"##;
+
+        let deserialized: MaterialScheme = serde_json::from_str(json_str).unwrap();
+        assert_eq!(deserialized.surface_tint, "#0a141e");
+        assert_eq!(deserialized.on_primary, "#28323c");
+    }
+
+    #[test]
+    fn test_load_builtin_theme() {
+        assert!(Appearance::load_builtin_theme("default").is_some());
+        assert!(Appearance::load_builtin_theme("slint").is_some());
+        assert!(Appearance::load_builtin_theme("nonexistent").is_none());
     }
 }
