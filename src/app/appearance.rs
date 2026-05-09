@@ -268,6 +268,7 @@ impl Appearance {
         };
 
         Self::apply(ui, &theme);
+        ui.invoke_set_color_scheme(config.is_dark_mode());
 
         if let Some(label) = &app_config.label {
             ui.set_greeting_msg(slint::SharedString::from(label));

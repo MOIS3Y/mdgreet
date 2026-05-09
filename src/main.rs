@@ -47,8 +47,6 @@ async fn main() {
     app::Appearance::init(&ui, &config);
     let _clock_timer = app::Clock::init(&ui);
 
-    ui.invoke_set_color_scheme(config.is_dark_mode());
-
     // Initialize State and Login orchestrators
     app::State::init(&ui, cache.clone(), &users_data);
     app::Login::init(&ui, cache.clone(), args.demo);
