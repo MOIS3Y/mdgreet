@@ -11,14 +11,7 @@ use slint::ComponentHandle;
 use std::sync::{Arc, Mutex};
 use tracing::info;
 
-/// The main entry point for the `mdgreet` greeter.
-///
-/// This function acts purely as an orchestrator. It handles:
-/// - CLI argument parsing and configuration loading.
-/// - Initialization of foundational services (logging, i18n).
-/// - Creation of the shared UI instance and persistence cache.
-/// - Delegation of business logic and UI bindings to dedicated `app::*`
-///   modules.
+/// The main application entry point.
 #[tokio::main]
 async fn main() {
     let args = Args::parse();

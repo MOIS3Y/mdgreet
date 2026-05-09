@@ -1,5 +1,6 @@
 use clap::Parser;
 
+/// Command-line arguments for the application.
 #[derive(Parser, Debug)]
 #[command(
     name = "mdgreet",
@@ -7,7 +8,7 @@ use clap::Parser;
     about = "A clean Material Design 3 greeter for greetd in Rust and Slint"
 )]
 pub struct Args {
-    /// Path to configuration file
+    /// Path to configuration file (TOML)
     #[arg(short, long)]
     pub config: Option<String>,
 
@@ -17,6 +18,7 @@ pub struct Args {
 }
 
 impl Args {
+    /// Parses the command-line arguments and returns an instance of `Args`.
     pub fn parse() -> Self {
         <Self as Parser>::parse()
     }
