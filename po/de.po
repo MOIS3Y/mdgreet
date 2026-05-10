@@ -1,0 +1,186 @@
+# German translations for mdgreet package.
+# Copyright (C) 2026 Stepan Zhukovsky
+# This file is distributed under the same license as the mdgreet package.
+# Stepan Zhukovsky <stepan@zhukovsky.me>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: mdgreet 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-09 13:41+0900\n"
+"PO-Revision-Date: 2026-05-09 12:00+0300\n"
+"Last-Translator: Stepan Zhukovsky <stepan@zhukovsky.me>\n"
+"Language-Team: German\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: src/app/session.rs:68
+msgid "No sessions found"
+msgstr "Keine Sitzungen gefunden"
+
+#: src/app/session.rs:87
+msgid "None"
+msgstr "Keine"
+
+#: src/app/clock.rs:31
+msgid "Monday"
+msgstr "Montag"
+
+#: src/app/clock.rs:32
+msgid "Tuesday"
+msgstr "Dienstag"
+
+#: src/app/clock.rs:33
+msgid "Wednesday"
+msgstr "Mittwoch"
+
+#: src/app/clock.rs:34
+msgid "Thursday"
+msgstr "Donnerstag"
+
+#: src/app/clock.rs:35
+msgid "Friday"
+msgstr "Freitag"
+
+#: src/app/clock.rs:36
+msgid "Saturday"
+msgstr "Samstag"
+
+#: src/app/clock.rs:37
+msgid "Sunday"
+msgstr "Sonntag"
+
+#: src/app/clock.rs:41
+msgid "January"
+msgstr "Januar"
+
+#: src/app/clock.rs:42
+msgid "February"
+msgstr "Februar"
+
+#: src/app/clock.rs:43
+msgid "March"
+msgstr "März"
+
+#: src/app/clock.rs:44
+msgid "April"
+msgstr "April"
+
+#: src/app/clock.rs:45
+msgid "May"
+msgstr "Mai"
+
+#: src/app/clock.rs:46
+msgid "June"
+msgstr "Juni"
+
+#: src/app/clock.rs:47
+msgid "July"
+msgstr "Juli"
+
+#: src/app/clock.rs:48
+msgid "August"
+msgstr "August"
+
+#: src/app/clock.rs:49
+msgid "September"
+msgstr "September"
+
+#: src/app/clock.rs:50
+msgid "October"
+msgstr "Oktober"
+
+#: src/app/clock.rs:51
+msgid "November"
+msgstr "November"
+
+#: src/app/clock.rs:52
+msgid "December"
+msgstr "Dezember"
+
+#: src/app/clock.rs:62
+#, rust-format
+msgid "{weekday}, {month} {day}"
+msgstr "{weekday}, {day}. {month}"
+
+#: src/app/login.rs:26
+msgid "No compositor selected"
+msgstr "Kein Compositor ausgewählt"
+
+#: src/utils/client.rs:51
+msgid "GREETD_SOCK is not set. Are you running under greetd?"
+msgstr "GREETD_SOCK ist nicht gesetzt. Läuft das Programm unter greetd?"
+
+#: src/utils/client.rs:96 src/utils/client.rs:125
+msgid "Invalid username or password"
+msgstr "Ungültiger Benutzername oder Passwort"
+
+#: src/utils/client.rs:128
+msgid "greetd error"
+msgstr "greetd Fehler"
+
+#: src/utils/client.rs:161
+msgid "Failed to start session"
+msgstr "Sitzung konnte nicht gestartet werden"
+
+#: src/utils/client.rs:165
+msgid "Unexpected AuthMessage when trying to start session"
+msgstr "Unerwartete AuthMessage beim Versuch, die Sitzung zu starten"
+
+#: ui/main.slint:117
+msgctxt "GreeterWindow"
+msgid "Press any key to unlock"
+msgstr "Zum Entsperren beliebige Taste drücken"
+
+#: ui/components/power_menu.slint:56
+msgctxt "PowerBottomSheet"
+msgid "Power Options"
+msgstr "Energieoptionen"
+
+#: ui/components/power_menu.slint:67
+msgctxt "PowerBottomSheet"
+msgid "Sleep"
+msgstr "Energie sparen"
+
+#: ui/components/power_menu.slint:76
+msgctxt "PowerBottomSheet"
+msgid "Hibernate"
+msgstr "Ruhezustand"
+
+#: ui/components/power_menu.slint:85
+msgctxt "PowerBottomSheet"
+msgid "Restart"
+msgstr "Neu starten"
+
+#: ui/components/power_menu.slint:94
+msgctxt "PowerBottomSheet"
+msgid "Shut down"
+msgstr "Herunterfahren"
+
+#: ui/components/login.slint:114
+msgctxt "Login"
+msgid "User"
+msgstr "Benutzer"
+
+#: ui/components/login.slint:131
+msgctxt "Login"
+msgid "Username"
+msgstr "Benutzername"
+
+#: ui/components/login.slint:145
+msgctxt "Login"
+msgid "Password"
+msgstr "Passwort"
+
+#: ui/components/login.slint:172
+msgctxt "Login"
+msgid "Select from list"
+msgstr "Aus Liste wählen"
+
+#: ui/components/login.slint:172
+msgctxt "Login"
+msgid "Not listed?"
+msgstr "Nicht in der Liste?"
