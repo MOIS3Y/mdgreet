@@ -9,7 +9,6 @@ on:
       - 'docs/**'
       - 'LICENSE'
       - '.github/*.yml'
-      - '.github/workflows/*.yml'
   pull_request:
     branches: [ main ]
     paths-ignore:
@@ -17,7 +16,6 @@ on:
       - 'docs/**'
       - 'LICENSE'
       - '.github/*.yml'
-      - '.github/workflows/*.yml'
 
 jobs:
   build:
