@@ -21,6 +21,7 @@ pkgs.mkShell {
 
     # docs
     mdbook
+    git-cliff
   ] ++ i18nTools;
 
   RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";

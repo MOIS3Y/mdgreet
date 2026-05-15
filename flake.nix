@@ -102,7 +102,10 @@
         };
 
         devShells.docs = pkgs.mkShell {
-          packages = [ pkgs.mdbook ];
+          packages = [
+            pkgs.mdbook
+            pkgs.git-cliff
+          ];
         };
       }
     );

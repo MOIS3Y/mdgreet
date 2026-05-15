@@ -18,3 +18,8 @@
 - [Architecture](./dev/architecture.md)
 - [Testing & VM](./dev/testing.md)
 - [Translations](./dev/i18n.md)
+
+---
+
+- [Changelog](./CHANGELOG.md)
+
