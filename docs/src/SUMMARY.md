@@ -5,6 +5,8 @@
 # User Guide
 - [Installation](./user/installation.md)
 - [Setup with greetd](./user/greetd.md)
+    - [NixOS](./user/greetd/nixos.md)
+    - [Standard Linux](./user/greetd/standard.md)
 - [Configuration](./user/config.md)
     - [Appearance](./user/config/appearance.md)
     - [Theming](./user/config/themes.md)
