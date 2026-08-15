@@ -38,7 +38,49 @@ your wallpaper.
 - **Nix-First:** Native support for Nix Flakes, including an integrated
   QEMU test VM for development.
 
-## Usage Guide
+## Quick Preview
+
+You can try the greeter on NixOS without installing or configuring `greetd`:
+
+```sh
+nix run github:MOIS3Y/mdgreet -- --demo
+```
+
+Demo mode does not connect to `greetd`, so it does not need to be installed.
+If no configuration file is provided, mdgreet uses sensible defaults.
+
+To experiment with the appearance, create an `mdgreet.toml` file:
+
+```toml
+[appearance]
+greeting = "Welcome to NixOS!"
+opacity = 0.7
+
+[appearance.clock]
+font_size = 200
+font_weight = 500
+
+[appearance.theme]
+# Use "default", "slint", "auto", "seed", or "custom".
+name = "auto"
+mode = "dark"
+
+[appearance.background]
+path = "/absolute/path/to/wallpaper.jpg"
+blur = 10.0
+```
+
+Then pass it to the demo:
+
+```sh
+nix run github:MOIS3Y/mdgreet -- --config ./mdgreet.toml --demo
+```
+
+Only the settings you want to change need to be included. See the
+**[configuration reference](https://mois3y.github.io/mdgreet/user/config.html)**
+for every available option.
+
+## Documentation
 
 Comprehensive guides on installation, configuration, and development are
 available in the official **[Documentation](https://mois3y.github.io/mdgreet/)**.
