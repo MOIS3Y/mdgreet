@@ -31,12 +31,44 @@ export component Login {
     in property <string> greeting-msg: "Welcome!";
     in property <bool> is-authenticating: false;
 
+    in property <int> input-revision;
+    in property <bool> fingerprint-enabled;
+    in property <bool> fingerprint-mode;
+    in property <bool> auth-prompt-ready;
+    in property <bool> password-requested;
+    in property <bool> password-stage;
+    callback use-password(string);
+    callback use-fingerprint(string);
+    property <string> current-username: root.manual-user-entry
+        ? root.manual-username : (root.selected-user-index >= 0
+            ? root.users[root.selected-user-index].user_name : "");
+    property <bool> password-visible: !root.fingerprint-mode
+        && (!root.fingerprint-enabled || root.auth-prompt-ready
+            || root.password-stage);
+    // Informational PAM prompts stay quiet until the user asks for help.
+    property <string> feedback: root.auth-error != "" ? root.auth-error
+        : (root.password-requested && !root.auth-prompt-ready
+            ? @tr("Waiting for password prompt")
+            : (root.auth-notice-error ? root.auth-notice : root.auth-status));
+    callback fingerprint-hint();
+    callback return-to-clock();
+    in property <bool> auth-active;
+    in property <bool> auth-launching;
+    in property <string> auth-status;
+    in property <string> auth-notice;
+    in property <bool> auth-notice-error;
+    in property <string> auth-prompt;
+    in property <bool> auth-secret: true;
+    callback cancel-auth();
+    changed input-revision => { root.password-text = ""; root.show-password = false; }
     callback login(string, string); // user_name, password
     callback user-selected(int);
 
     property <bool> manual-user-entry: false;
     property <bool> show-password: false;
     property <string> manual-username: "";
+    property <string> confirmed-username: "";
+    property <int> password-focus-revision: 0;
     property <string> password-text: "";
     property <float> field-opacity: AppStyle.window-opacity * 0.7;
 
@@ -45,9 +77,19 @@ export component Login {
         root.auth-error = "";
     }
     changed selected-user-index => {
+        root.password-focus-revision += 1;
         root.auth-error = "";
+        root.password-text = "";
+    }
+    changed manual-username => {
+        if (root.manual-username != root.confirmed-username) {
+            root.cancel-auth();
+        }
     }
     changed manual-user-entry => {
+        root.confirmed-username = "";
+        root.cancel-auth();
+        root.password-text = "";
         root.auth-error = "";
     }
 
@@ -58,18 +100,25 @@ export component Login {
     VerticalLayout {
         width: 100%;
         height: 100%;
-        spacing: 16px;
-        alignment: center;
+        spacing: 8px;
+        alignment: start;
+        padding-top: 24px;
+        padding-bottom: 32px;
 
-        if (root.greeting-msg != ""): MaterialText {
-            text: root.greeting-msg;
-            style: MaterialTypography.headline-medium;
-            color: MaterialPalette.primary;
-            horizontal-alignment: center;
+        Rectangle {
+            height: 40px;
+            if (root.greeting-msg != ""): MaterialText {
+                text: root.greeting-msg;
+                style: MaterialTypography.headline-medium;
+                color: MaterialPalette.primary;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
         }
 
         // Avatar
         HorizontalLayout {
+            height: 100px;
             alignment: center;
             Rectangle {
                 width: 100px;
@@ -104,6 +153,7 @@ export component Login {
 
         // User Entry Block
         VerticalLayout {
+            height: 64px;
             spacing: 0;
             alignment: center;
 
@@ -115,7 +165,7 @@ export component Login {
                     items: root.user-menu-items;
                     current_index <=> root.selected-user-index;
                     leading_icon: @image-url("../icons/person.svg");
-                    enabled: !root.is-authenticating;
+                    enabled: !root.auth-launching;
                     background_opacity: root.field-opacity;
 
                     selected(idx) => {
@@ -129,70 +179,165 @@ export component Login {
                 PasswordField {
                     width: 300px;
                     label: @tr("Username");
+                    auto-focus: true;
                     text <=> root.manual-username;
                     leading_icon: @image-url("../icons/person.svg");
-                    enabled: !root.is-authenticating;
+                    enabled: !root.auth-launching;
                     background_opacity: root.field-opacity;
+                    key_pressed(event) => {
+                        if (event.text == Key.Escape) {
+                            root.return-to-clock();
+                            return accept;
+                        }
+                        reject
+                    }
+                    accepted => {
+                        root.confirmed-username = root.manual-username;
+                        if (root.fingerprint-enabled && !root.password-stage) {
+                            root.use-fingerprint(root.current-username);
+                        } else {
+                            root.use-password(root.current-username);
+                        }
+                    }
                 }
             }
         }
 
-        // Password Block
-        HorizontalLayout {
-            alignment: center;
-            password_input := PasswordField {
-                width: 300px;
-                label: @tr("Password");
-                text <=> root.password-text;
-                input_type: root.show-password ? InputType.text : InputType.password;
-                has_error: root.auth-error != "";
-                supporting_text: root.auth-error;
-                leading_icon: @image-url("../icons/passkey.svg");
-                trailing_icon: root.show-password ? @image-url("../icons/visibility.svg") : @image-url("../icons/visibility_lock.svg");
-                enabled: !root.is-authenticating;
-                background_opacity: root.field-opacity;
+        Rectangle {
+            height: 144px;
+            VerticalLayout {
+                spacing: 8px;
+                alignment: start;
+                // Only reserve a field slot when a password can be entered.
+                if (root.password-visible): Rectangle {
+                    height: root.auth-error != "" ? 96px : 56px;
+                    VerticalLayout {
+                        padding-left: 40px;
+                        padding-right: 40px;
+                        alignment: start;
+                        if (root.password-visible): password_input := PasswordField {
+                            vertical-stretch: 0;
+                            width: 300px;
+                            label: root.auth-prompt != "" ? root.auth-prompt : @tr("Password");
+                            text <=> root.password-text;
+                            auto-focus: root.current-username != ""
+                                && (!root.manual-user-entry
+                                    || root.manual-username == root.confirmed-username);
+                            focus-revision: root.password-focus-revision;
+                            input_type: (root.show-password || (root.auth-prompt != "" && !root.auth-secret)) ? InputType.text : InputType.password;
+                            has_error: root.auth-error != "";
+                            supporting_text: root.auth-error;
+                            leading_icon: @image-url("../icons/passkey.svg");
+                            trailing_icon: root.show-password ? @image-url("../icons/visibility.svg") : @image-url("../icons/visibility_lock.svg");
+                            enabled: !root.is-authenticating;
+                            background_opacity: root.field-opacity;
 
-                trailing_icon_clicked => {
-                    root.show-password = !root.show-password;
+                            key_pressed(event) => {
+                                if (event.text == Key.Escape) {
+                                    root.return-to-clock();
+                                    return accept;
+                                }
+                                reject
+                            }
+                            trailing_icon_clicked => {
+                                root.show-password = !root.show-password;
+                            }
+
+                            accepted => {
+                                root.login(root.current-username, self.text);
+                            }
+                        }
+                    }
                 }
 
-                accepted => {
-                    root.login(
-                        root.manual-user-entry ? root.manual-username : (root.selected-user-index >= 0 ? root.users[root.selected-user-index].user_name : ""),
-                        self.text);
+                // One action row shared by both card modes.
+                HorizontalLayout {
+                    height: 40px;
+                    padding-left: 40px;
+                    padding-right: 40px;
+                    spacing: 0;
+                    if (root.fingerprint-enabled &&
+                        (!root.password-stage || root.fingerprint-mode)): TextButton {
+                        text: root.fingerprint-mode || !root.auth-prompt-ready
+                            ? @tr("Use password") : @tr("Use fingerprint");
+                        enabled: !root.auth-launching
+                            && !(root.password-requested && !root.auth-prompt-ready);
+                        clicked => {
+                            if (root.fingerprint-mode || !root.auth-prompt-ready) {
+                                root.use-password(root.current-username);
+                            } else {
+                                root.use-fingerprint(root.current-username);
+                                root.fingerprint-hint();
+                            }
+                        }
+                    }
+                    Rectangle { horizontal-stretch: 1; }
+                    TextButton {
+                        text: root.manual-user-entry ? @tr("Select from list") : @tr("Not listed?");
+                        enabled: !root.is-authenticating;
+                        clicked => { root.manual-user-entry = !root.manual-user-entry; }
+                    }
                 }
+
+                if (!root.password-visible): Rectangle {
+                    height: 96px;
+                    MaterialText {
+                        x: 40px;
+                        width: parent.width - 80px;
+                        height: parent.height;
+                        text: root.feedback;
+                        color: root.auth-error != "" || root.auth-notice-error
+                            ? MaterialPalette.error : MaterialPalette.on-surface;
+                        style: MaterialTypography.body-small;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                        wrap: word-wrap;
+                        overflow: elide;
+                    }
+                }
+
+                if (root.password-visible && root.password-requested
+                    && !root.auth-prompt-ready): MaterialText {
+                    height: 32px;
+                    text: @tr("Waiting for password prompt");
+                    style: MaterialTypography.body-small;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                    wrap: word-wrap;
+                }
+
             }
         }
 
-        // Toggle Button
+        // Fixed final slot: the two primary controls always share a position.
         HorizontalLayout {
-            alignment: end;
-            padding_right: 40px;
-            TextButton {
-                text: root.manual-user-entry ? @tr("Select from list") : @tr("Not listed?");
-                enabled: !root.is-authenticating;
-                clicked => {
-                    root.manual-user-entry = !root.manual-user-entry;
-                }
-            }
-        }
-
-        // Login Button / Spinner
-        HorizontalLayout {
+            height: 64px;
             alignment: center;
             Rectangle {
                 width: 64px;
                 height: 64px;
 
                 if (!root.is-authenticating): FilledIconButton {
-                    icon: @image-url("../icons/fingerprint.svg");
+                    icon: root.fingerprint-mode
+                        ? @image-url("../icons/fingerprint.svg")
+                        : @image-url("../icons/login.svg");
                     width: 100%;
                     height: 100%;
 
                     clicked => {
-                        root.login(
-                            root.manual-user-entry ? root.manual-username : (root.selected-user-index >= 0 ? root.users[root.selected-user-index].user_name : ""),
-                            root.password-text);
+                        if (root.fingerprint-mode) {
+                            if (root.auth-active) {
+                                root.fingerprint-hint();
+                            } else {
+                                root.use-fingerprint(root.current-username);
+                                root.fingerprint-hint();
+                            }
+                        } else if (root.auth-prompt-ready || root.password-stage
+                            || !root.fingerprint-enabled) {
+                            root.login(root.current-username, root.password-text);
+                        } else {
+                            root.use-password(root.current-username);
+                        }
                     }
                 }
 

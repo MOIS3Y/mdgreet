@@ -76,6 +76,64 @@ export component GreeterWindow inherits MaterialWindow {
         Palette.color-scheme = is-dark ? ColorScheme.dark : ColorScheme.light;
     }
 
+    in property <bool> fingerprint-enabled: false;
+    in property <bool> fingerprint-auto-start: true;
+    in-out property <bool> fingerprint-mode: false;
+    in-out property <bool> auth-prompt-ready: false;
+    in-out property <bool> password-requested: false;
+    in-out property <bool> password-stage: false;
+    callback use-password(string);
+    callback use-fingerprint(string);
+    callback fingerprint-hint();
+    callback return-to-clock();
+    return-to-clock => {
+        if (!root.auth-launching) {
+            root.show-login = false;
+            fs.focus();
+        }
+    }
+    in-out property <bool> auth-launching: false;
+    in-out property <bool> auth-active: false;
+    in-out property <int> auth-generation: 0;
+    in-out property <string> auth-status;
+    in-out property <string> auth-notice;
+    in-out property <bool> auth-notice-error;
+    in-out property <string> auth-prompt;
+    in-out property <bool> auth-secret: true;
+    callback auth-begin(string, string, bool);
+    callback cancel-auth();
+    callback clear-auth-input();
+    in-out property <int> input-revision: 0;
+    clear-auth-input => { root.input-revision += 1; }
+    callback auth-context-changed();
+    auth-context-changed => {
+        if (root.auth-launching) { return; }
+        root.cancel-auth();
+        root.fingerprint-mode = root.fingerprint-enabled && !root.password-stage;
+        root.auto-auth-generation = root.auth-generation;
+        auto-auth.start();
+    }
+    in-out property <int> auto-auth-generation;
+    // Coalesce user/session changes into one authentication attempt.
+    auto-auth := Timer {
+        interval: 1ms;
+        running: false;
+        triggered => {
+            auto-auth.stop();
+            if (root.auto-auth-generation == root.auth-generation
+                && root.fingerprint-enabled && root.fingerprint-auto-start
+                && root.show-login
+                && root.selected-user-index >= 0) {
+                root.auth-begin(root.users[root.selected-user-index].user_name, "", false);
+            }
+        }
+    }
+    changed selected-user-index => {
+        root.password-stage = false;
+        root.auth-context-changed();
+    }
+    changed selected-compositor-index => { root.auth-context-changed(); }
+    changed show-login => { root.auth-context-changed(); }
     callback login(string, string);
     callback compositor-selected(int);
     callback user-selected(int);
@@ -124,11 +182,29 @@ export component GreeterWindow inherits MaterialWindow {
         // Login Card
         if (root.show-login): Rectangle {
             width: 380px;
-            height: 500px;
+            height: min(500px, parent.height - 48px);
             background: MaterialPalette.surface-container.with-alpha(AppStyle.window-opacity);
             border_radius: 32px;
 
             Login {
+                input-revision: root.input-revision;
+                fingerprint-enabled: root.fingerprint-enabled;
+                fingerprint-mode: root.fingerprint-mode;
+                auth-prompt-ready: root.auth-prompt-ready;
+                password-requested: root.password-requested;
+                password-stage: root.password-stage;
+                use-password(user) => { root.use-password(user); }
+                use-fingerprint(user) => { root.use-fingerprint(user); }
+                auth-active: root.auth-active;
+                auth-launching: root.auth-launching;
+                auth-status: root.auth-status;
+                auth-notice: root.auth-notice;
+                auth-notice-error: root.auth-notice-error;
+                auth-prompt: root.auth-prompt;
+                auth-secret: root.auth-secret;
+                cancel-auth => { root.cancel-auth(); }
+                fingerprint-hint => { root.fingerprint-hint(); }
+                return-to-clock => { root.return-to-clock(); }
                 users: root.users;
                 user-menu-items: root.user-menu-items;
                 selected-user-index <=> root.selected-user-index;
@@ -138,7 +214,7 @@ export component GreeterWindow inherits MaterialWindow {
                 is-authenticating <=> root.is-authenticating;
 
                 login(user_name, pwd) => {
-                    root.login(user_name, pwd);
+                    root.auth-begin(user_name, pwd, true);
                 }
 
                 user-selected(idx) => {
@@ -178,6 +254,7 @@ export component GreeterWindow inherits MaterialWindow {
                         current-name: root.compositors[root.selected-compositor-index].name;
                         icon: @image-url("icons/dashboard_2_gear.svg");
                         selected(idx) => {
+                            if (root.auth-launching) { return; }
                             root.selected-compositor-index = idx;
                             root.compositor-selected(idx);
                         }
@@ -215,8 +292,8 @@ export component GreeterWindow inherits MaterialWindow {
                 root.show-login = true;
                 return accept;
             }
-            if (event.text == Key.Escape) {
-                root.show-login = false;
+            if (event.text == Key.Escape && !root.auth-launching) {
+                root.return-to-clock();
                 return accept;
             }
             reject

@@ -1,12 +1,19 @@
 use anyhow::{Context, Result};
 use gettextrs::gettext;
-use greetd_ipc::{AuthMessageType, ErrorType, Request, Response, codec::TokioCodec};
+use greetd_ipc::{Request, Response, codec::TokioCodec};
 use tokio::net::UnixStream;
-use tracing::{debug, error, info};
+use tracing::info;
+
+mod conversation;
+mod demo;
+pub(crate) use demo::DemoScenario;
 
 #[derive(Debug)]
+/// Authentication rejection or transport/service failure.
 pub enum ClientError {
+    /// PAM rejected the credentials.
     Auth(String),
+    /// IPC or session lifecycle failed.
     System(String),
 }
 
@@ -33,6 +40,25 @@ impl From<greetd_ipc::codec::Error> for ClientError {
     }
 }
 
+/// Answers retain their input mode so a queued password is never sent to a
+/// visible PAM prompt (for example, a username or challenge question).
+pub struct AuthAnswer {
+    /// The response, deliberately excluded from Debug and logs.
+    pub value: String,
+    /// Whether the response belongs to a secret prompt.
+    pub secret: bool,
+}
+
+/// Conversation updates delivered to the interface without parsing PAM text.
+pub enum AuthEvent {
+    /// Informational or error text from PAM.
+    Message { text: String, error: bool },
+    /// A fresh input request; earlier responses must not be replayed.
+    Prompt { text: String, secret: bool },
+    /// A response has been submitted and is being checked.
+    Verifying,
+}
+
 /// A client for interacting with the greetd daemon over a Unix domain socket.
 pub struct GreetdClient {
     /// The asynchronous stream connected to the greetd socket.
@@ -54,89 +80,10 @@ impl GreetdClient {
         Ok(Self { stream })
     }
 
-    /// Authenticates a user using a challenge-response loop.
-    ///
-    /// This method orchestrates the full authentication flow, handling
-    /// requests for secrets (passwords) and visible information. To prevent
-    /// long PAM-induced delays on failure, it will bail early if prompted
-    /// for a secret more than once.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if authentication fails, the session is cancelled,
-    /// or a protocol error occurs.
-    pub async fn authenticate(
-        &mut self,
-        username: &str,
-        password: &str,
-    ) -> std::result::Result<(), ClientError> {
-        let mut request = Request::CreateSession {
-            username: username.to_string(),
-        };
-
-        let mut secret_prompted = false;
-
-        loop {
-            // Write the current request to greetd
-            request.write_to(&mut self.stream).await?;
-
-            // Read the response from greetd
-            let response = Response::read_from(&mut self.stream).await?;
-
-            match response {
-                Response::AuthMessage {
-                    auth_message,
-                    auth_message_type,
-                } => {
-                    debug!("Received AuthMessage: {:?}", auth_message);
-                    let reply = match auth_message_type {
-                        AuthMessageType::Secret => {
-                            if secret_prompted {
-                                let _ = Request::CancelSession.write_to(&mut self.stream).await;
-                                let msg = gettext("Invalid username or password");
-                                return Err(ClientError::Auth(msg));
-                            }
-                            secret_prompted = true;
-                            Some(password.to_string())
-                        }
-                        AuthMessageType::Visible => Some(username.to_string()),
-                        AuthMessageType::Info => {
-                            info!("greetd info: {}", auth_message);
-                            None
-                        }
-                        AuthMessageType::Error => {
-                            error!("greetd error: {}", auth_message);
-                            None
-                        }
-                    };
-
-                    request = Request::PostAuthMessageResponse { response: reply };
-                }
-                Response::Success => {
-                    info!("Authentication successful!");
-                    return Ok(());
-                }
-                Response::Error {
-                    error_type,
-                    description,
-                } => {
-                    let _ = Request::CancelSession.write_to(&mut self.stream).await;
-                    if let ErrorType::AuthError = error_type {
-                        let msg = gettext("Invalid username or password");
-                        return Err(ClientError::Auth(msg));
-                    } else {
-                        let prefix = gettext("greetd error");
-                        return Err(ClientError::System(format!("{}: {}", prefix, description)));
-                    }
-                }
-            }
-        }
-    }
-
     /// Requests greetd to start a new session with the specified command
     /// and environment.
     ///
-    /// This should only be called after a successful [`authenticate`] call.
+    /// This should only be called after a successful [`Self::authenticate`] call.
     ///
     /// # Errors
     ///
@@ -159,12 +106,54 @@ impl GreetdClient {
             }
             Response::Error { description, .. } => {
                 let prefix = gettext("Failed to start session");
-                return Err(ClientError::System(format!("{}: {}", prefix, description)));
+                Err(ClientError::System(format!(
+                    "{}: {}",
+                    prefix, description
+                )))
             }
             Response::AuthMessage { .. } => {
-                let msg = gettext("Unexpected AuthMessage when trying to start session");
-                return Err(ClientError::System(msg));
+                let msg = gettext(
+                    "Unexpected AuthMessage when trying to start session",
+                );
+                Err(ClientError::System(msg))
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use greetd_ipc::ErrorType;
+
+    #[tokio::test]
+    async fn session_start_failure_is_not_success() {
+        let (stream, mut peer) = UnixStream::pair().unwrap();
+        let server = tokio::spawn(async move {
+            assert!(matches!(
+                tokio::time::timeout(
+                    std::time::Duration::from_secs(2),
+                    Request::read_from(&mut peer),
+                )
+                .await
+                .unwrap()
+                .unwrap(),
+                Request::StartSession { .. }
+            ));
+            Response::Error {
+                error_type: ErrorType::Error,
+                description: "cannot launch".into(),
+            }
+            .write_to(&mut peer)
+            .await
+            .unwrap();
+        });
+        assert!(
+            GreetdClient { stream }
+                .start_session(vec!["example".into()], vec![])
+                .await
+                .is_err()
+        );
+        server.await.unwrap();
     }
 }

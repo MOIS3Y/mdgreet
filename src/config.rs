@@ -155,9 +155,38 @@ pub struct CacheConfig {
     pub path: Option<PathBuf>,
 }
 
+/// Fingerprint UI behaviour; the system PAM stack still selects methods.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct FingerprintConfig {
+    /// Offer the fingerprint card and its start button.
+    pub enable: bool,
+    /// Begin authentication when the card opens, rather than on button press.
+    pub auto_start: bool,
+}
+
+impl Default for FingerprintConfig {
+    fn default() -> Self {
+        Self {
+            enable: false,
+            auto_start: true,
+        }
+    }
+}
+
+/// Authentication presentation settings.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(default)]
+pub struct AuthConfig {
+    /// Fingerprint card and automatic-start options.
+    pub fingerprint: FingerprintConfig,
+}
+
 /// Root configuration object for mdgreet.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct GreeterConfig {
+    #[serde(default)]
+    pub auth: AuthConfig,
     /// Appearance and typography settings.
     #[serde(default)]
     pub appearance: AppearanceConfig,
@@ -205,4 +234,31 @@ pub fn resolve_config_path(cli_path: &Option<String>) -> PathBuf {
         .as_ref()
         .map(PathBuf::from)
         .unwrap_or_else(paths::default_config_path)
+}
+
+#[cfg(test)]
+mod auth_tests {
+    use super::*;
+
+    #[test]
+    fn fingerprint_configuration_applies_options_and_defaults() {
+        for (text, enable, auto_start) in [
+            ("", false, true),
+            ("[auth.fingerprint]\nenable = true", true, true),
+            (
+                "[auth.fingerprint]\nenable = true\nauto_start = false",
+                true,
+                false,
+            ),
+            ("[auth.fingerprint]\nauto_start = false", false, false),
+        ] {
+            let config: GreeterConfig =
+                Figment::from(Serialized::defaults(GreeterConfig::default()))
+                    .merge(Toml::string(text))
+                    .extract()
+                    .unwrap();
+            assert_eq!(config.auth.fingerprint.enable, enable);
+            assert_eq!(config.auth.fingerprint.auto_start, auto_start);
+        }
+    }
 }
