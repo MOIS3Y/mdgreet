@@ -1,5 +1,14 @@
 # mdgreet configuration example
 
+[auth.fingerprint]
+# Enable fingerprint login
+# Default: false
+enable = false
+
+# Start automatically when the login card opens; false requires a button press
+# Default: true
+auto_start = true
+
 [appearance]
 # The greeting message displayed above the avatar on the login card
 # Default: "Welcome!"

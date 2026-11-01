@@ -11,3 +11,6 @@ Please choose your distribution type below:
 
 - [NixOS Configuration](./greetd/nixos.md)
 - [Standard Linux Configuration](./greetd/standard.md)
+
+For fingerprint login, also follow the [fingerprint setup guide](fingerprint.md)
+and configure the [authentication options](config/authentication.md).

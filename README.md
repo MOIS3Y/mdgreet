@@ -35,6 +35,9 @@ your wallpaper.
   native support for starting both Wayland and X11 user sessions.
 - **Fast & Lightweight:** Written in Rust to ensure minimal resource
   overhead and near-instant startup.
+- **Fingerprint Login:** Sign in through greetd/PAM with automatic or explicit
+  start and password fallback. See [fingerprint setup](docs/src/user/fingerprint.md)
+  and [authentication options](docs/src/user/config/authentication.md).
 - **Nix-First:** Native support for Nix Flakes, including an integrated
   QEMU test VM for development.
 
