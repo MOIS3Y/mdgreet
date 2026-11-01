@@ -145,6 +145,12 @@ The timeout is in seconds per verification attempt; two failed attempts can
 therefore use close to twenty seconds of scan time. This is not an account lockout.
 These settings also affect services that include the `login` authentication
 stack.
+
+When `login.fprintAuth` is enabled and its fingerprint rule runs before the
+password rule, password verification waits for the scan to finish even with
+`auth.fingerprint.enable = false` in mdgreet. That option only hides mdgreet's
+fingerprint interface; it does not change this PAM rule.
+
 If greetd uses a different stack, configure the fingerprint rule in that stack
 instead. Setting `greetd.fprintAuth` alone does not change a delegated `login`
 stack, and adding a second fingerprint rule can cause repeated scan waits.

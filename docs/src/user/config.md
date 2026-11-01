@@ -14,7 +14,7 @@ individual options and their defaults.
 
 ```toml
 [auth.fingerprint]
-# Offer fingerprint login (requires system PAM setup)
+# Show the fingerprint interface; PAM controls whether fingerprints are checked
 enable = false
 # Start when the card opens; false requires the fingerprint button
 auto_start = true

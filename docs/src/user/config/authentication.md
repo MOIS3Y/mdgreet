@@ -12,11 +12,13 @@ auto_start = false
 
 | Option | Type | Default | Behaviour |
 | --- | --- | --- | --- |
-| `enable` | Boolean | `false` | Show the fingerprint sign-in card and its start button. |
+| `enable` | Boolean | `false` | Show or hide the fingerprint sign-in card and its start button. This does not enable or disable `pam_fprintd`. |
 | `auto_start` | Boolean | `true` | Start authentication when the card opens or the selected account changes. Set to `false` to wait for an explicit action. |
 
-Omitting the section keeps the normal password-entry interface. Setting
-`auto_start` has no effect when `enable = false`.
+Omitting the section or setting `enable = false` keeps the password-entry
+interface. If greetd's PAM stack checks fingerprints before passwords, password
+verification still waits for that check to finish. Setting `auto_start` has no
+effect when `enable = false`.
 
 ## Automatic start
 
