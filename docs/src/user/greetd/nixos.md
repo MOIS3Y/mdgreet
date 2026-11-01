@@ -113,3 +113,54 @@ in
   environment.systemPackages = with pkgs; [ cage dbus ];
 }
 ```
+
+## Fingerprint login
+
+Use NixOS's standard fprintd/PAM support and enroll a finger for your account.
+No mdgreet-specific NixOS or PAM module is needed.
+
+```nix
+services.fprintd.enable = true;
+```
+
+Inspect the effective chain before changing it:
+
+```sh
+cat /etc/pam.d/{greetd,login}
+```
+
+In the standard NixOS setup, greetd delegates authentication to `login`. Enable
+fingerprint there if you previously disabled it, and set finite limits on the
+existing rule:
+
+```nix
+security.pam.services.login.fprintAuth = true;
+security.pam.services.login.rules.auth.fprintd.settings = {
+  max-tries = 2;
+  timeout = 10;
+};
+```
+
+The timeout is in seconds per verification attempt; two failed attempts can
+therefore use close to twenty seconds of scan time. This is not an account lockout.
+These settings also affect services that include the `login` authentication
+stack.
+If greetd uses a different stack, configure the fingerprint rule in that stack
+instead. Setting `greetd.fprintAuth` alone does not change a delegated `login`
+stack, and adding a second fingerprint rule can cause repeated scan waits.
+Preserve your existing password, account and session rules.
+
+In the attribute set generating mdgreet's TOML configuration, add:
+
+```nix
+auth.fingerprint = {
+  enable = true;
+  auto_start = false; # Start with the fingerprint button
+};
+```
+
+Use `auto_start = true` to start when the card opens. See
+[Fingerprint login](../fingerprint.md) for the interaction and the bounded wait
+before password verification. Build a boot generation and
+reboot when ready; keep an alternate login and the previous generation available.
+The greeter does not apply system configuration automatically.

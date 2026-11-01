@@ -85,3 +85,35 @@ vt = 1
 command = "cage -s -- mdgreet"
 user = "greeter"
 ```
+
+## Fingerprint login
+
+Install your distribution's fprintd service and PAM integration, then enroll a
+fingerprint using its tools. mdgreet uses ordinary greetd IPC and standard PAM
+modules; no additional authentication helper or custom PAM module is installed.
+
+Inspect `/etc/pam.d/greetd` and the authentication stacks it includes. Where your
+distribution supports manually configuring PAM, the fingerprint rule should run
+before password authentication and permit password fallback:
+
+```text
+auth sufficient pam_fprintd.so max-tries=2 timeout=10
+```
+
+Adjust an existing rule
+rather than adding a second one through another include. Keep the distribution's
+password authentication, account, session, delay and lockout rules intact. On
+systems managed by `authselect` or `pam-auth-update`, use that tool's supported
+configuration mechanism instead of overwriting generated PAM files.
+
+`max-tries` limits unmatched scans; `timeout` applies separately to each
+verification attempt. With no finger presented, the first timeout ends scanning.
+A mismatch starts the next attempt with a new timeout.
+
+The methods are sequential. A password entered during scanning is submitted when
+PAM asks for it, so the fingerprint stage must have a finite timeout. Selecting
+password entry does not itself stop the reader. Fingerprint unavailability,
+failed scans and timeouts should all permit password fallback.
+
+Finally, [enable fingerprint login in mdgreet](../fingerprint.md#enable-fingerprint-login).
+Keep another login method available while testing PAM changes.

@@ -1,18 +1,24 @@
 # Configuration
 
-`mdgreet` reads its configuration from a TOML file. 
-
-By default, it looks for the configuration file in standard locations like `/etc/greetd/mdgreet.toml`. You can also specify a custom path using the `-c` or `--config` command-line argument.
+`mdgreet` reads `/etc/greetd/mdgreet.toml` by default. Use `-c` or `--config`
+to select another TOML file. Only the settings you want to change are needed.
 
 ```bash
 mdgreet -c /path/to/my/mdgreet.toml
 ```
 
-## Full Configuration Example
+## Configuration example
 
-Here is a comprehensive example showing all available settings:
+This example covers the main configuration sections. The pages below describe
+individual options and their defaults.
 
 ```toml
+[auth.fingerprint]
+# Offer fingerprint login (requires system PAM setup)
+enable = false
+# Start when the card opens; false requires the fingerprint button
+auto_start = true
+
 [appearance]
 # The greeting message displayed above the avatar on the login card
 greeting = "Welcome Back!"
@@ -58,4 +64,23 @@ level = "info"
 # path = "/var/cache/mdgreet"
 ```
 
-Navigate through the subsections to learn more about specific configuration blocks.
+## Configuration reference
+
+- [Authentication](config/authentication.md): fingerprint login, automatic or
+  explicit start and defaults.
+- [Appearance](config/appearance.md): greeting, opacity, typography and clock.
+- [Theming](config/themes.md): theme sources, colours and mode.
+- [Background](config/background.md): wallpaper, blur and fallback colour.
+- [Power management](config/power.md): commands used by the power menu.
+
+To enable fingerprint login, configure both the interface and system
+[authentication setup](fingerprint.md):
+
+```toml
+[auth.fingerprint]
+enable = true
+auto_start = false
+```
+
+`enable` defaults to `false`; `auto_start` defaults to `true`. See the
+[authentication reference](config/authentication.md) for the full behaviour.
