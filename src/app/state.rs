@@ -19,14 +19,14 @@ impl State {
         // 1. Restore Initial State from Cache (LRU)
         {
             let mut cache_lock = cache.lock().unwrap();
-            if let Some(last_user) = cache_lock.last_user.clone() {
-                if let Some(pos) = users_data.iter().position(|u| u.user_name == last_user) {
+            if let Some(last_user) = cache_lock.last_user.clone()
+                && let Some(pos) = users_data.iter().position(|u| u.user_name == last_user)
+            {
                     ui.set_selected_user_index(pos as i32);
 
                     if let Some(last_sess) = cache_lock.get_last_session(&last_user) {
                         Self::set_compositor_by_name(ui, last_sess);
                     }
-                }
             }
         }
 
@@ -42,10 +42,10 @@ impl State {
 
             if let Some(user) = users_data_persistence.get(idx) {
                 let mut cache_lock = cache_ui.lock().unwrap();
-                if let Some(last_sess) = cache_lock.get_last_session(&user.user_name) {
-                    if let Some(ui) = ui_weak.upgrade() {
-                        Self::set_compositor_by_name(&ui, last_sess);
-                    }
+                if let Some(last_sess) = cache_lock.get_last_session(&user.user_name)
+                    && let Some(ui) = ui_weak.upgrade()
+                {
+                    Self::set_compositor_by_name(&ui, last_sess);
                 }
             }
         });

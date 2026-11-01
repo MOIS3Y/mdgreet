@@ -72,9 +72,7 @@ component CalendarDelegate {
     accessible_checkable: true;
     accessible_checked: root.selected;
     accessible_label: root.text;
-    accessible_action_default => {
-        touch_area.clicked();
-    }
+    accessible_action_default => { touch_area.clicked(); }
 
     touch_area := TouchArea {
         enabled: root.enabled;
@@ -87,8 +85,9 @@ component CalendarDelegate {
         key_pressed(event) => {
             if (event.text == " " || event.text == "\n") {
                 touch_area.clicked();
-                return accept;
+                 return accept;
             }
+
             return reject;
         }
     }
@@ -116,14 +115,14 @@ component CalendarDelegate {
 
     states [
         // FIXME: states
-        disabled when !root.enabled: {
+        disabled when !root.enabled : {
             root.opacity: 0.38;
         }
-        selected when root.selected: {
+        selected when root.selected : {
             background_layer.background: MaterialPalette.primary;
             text_label.color: MaterialPalette.on_primary;
         }
-        today when root.today: {
+        today when root.today : {
             background_layer.border_width: 1px;
             background_layer.border_color: MaterialPalette.primary;
         }
@@ -145,14 +144,14 @@ export component Calendar {
     callback select_date(date: Date);
 
     // header
-    for day[index] in root.header_model: CalendarHeaderDelegate {
+    for day[index] in root.header_model : CalendarHeaderDelegate {
         x: root.delegate_x(index);
         y: root.delegate_y(index);
         text: day;
     }
 
     // items
-    for index in root.month_count: CalendarDelegate {
+    for index in root.month_count : CalendarDelegate {
         property <Date> d: { day: index + 1, month: root.display_month, year: root.display_year };
 
         x: root.delegate_x(root.index_on_calendar(index));
@@ -204,15 +203,15 @@ component YearSelection {
 
     property <length> row_height: root.height / root.visible_row_count;
     property <int> row_count: root.model.length / root.column_count;
-    property <length> viewport_height: root.row_count * root.row_height;
+    property <length> content_height: root.row_count * root.row_height;
     property <length> start_x: root.width / (root.column_count + 1);
     property <length> start_y: root.height / (root.visible_row_count + 1);
 
     ScrollView {
         width: 100%;
         height: 100%;
-        viewport_width: root.width;
-        viewport_height: root.viewport_height;
+        content_width: root.width;
+        content_height: root.content_height;
 
         for year[index] in root.model: CalendarDelegate {
             x: root.delegate_center_x(index) - self.width / 2;
@@ -260,9 +259,7 @@ export component SelectionButton {
     accessible-role: button;
     accessible-checkable: true;
     accessible-checked: root.checked;
-    accessible-action-default => {
-        touch-area.clicked();
-    }
+    accessible-action-default => { touch-area.clicked(); }
     forward-focus: touch-area;
 
     touch-area := ExtendedTouchArea {
@@ -301,23 +298,22 @@ export component SelectionButton {
             width: MaterialStyleMetrics.size_18;
             colorize: MaterialPalette.on_surface_variant;
             transform-rotation: root.checked ? 180deg : 0;
-            rotation-origin-x: self.width / 2;
-            rotation-origin-y: self.height / 2;
 
             animate transform-rotation { duration: 250ms; }
         }
     }
 
     states [
-        disabled when !root.enabled: {
+        disabled when !root.enabled : {
             root.opacity: 0.38;
         }
     ]
 }
 
+
 export component DatePickerPopup inherits PopupWindow {
     in property <string> title;
-    in property <Date> date: { day: today[0], month: today[1], year: today[2] };
+    in property <Date> date : { day: today[0], month: today[1], year: today[2] };
 
     callback canceled();
     callback accepted(date: Date);
@@ -335,7 +331,7 @@ export component DatePickerPopup inherits PopupWindow {
     property <int> calendar_column_count: 7;
     property <int> calendar_row_count: 6;
     property <length> calendar_min_width: root.delegate_size * root.calendar_column_count + (root.calendar_column_count - 1) * 1px;
-    property <length> calendar_min_height: root.delegate_size * (root.calendar_row_count + 1) + (root.calendar_row_count - 1) * 1px;
+    property <length> calendar_min_height: root.delegate_size *(root.calendar_row_count + 1) + (root.calendar_row_count - 1) * 1px;
     property <int> year_selection_column_count: 3;
     property <int> year_selection_row_count: 5;
     property <bool> year_selection;
@@ -355,27 +351,7 @@ export component DatePickerPopup inherits PopupWindow {
     property <[int]> today: DatePickerAdapter.date_now();
     property <int> start_column: DatePickerAdapter.month_offset(root.display_date.month, root.display_date.year);
     property <string> current_month: DatePickerAdapter.format_date("%B %Y", root.display_date.day, root.display_date.month, root.display_date.year);
-    property <[int]> year_model: [
-        2024,
-        2025,
-        2026,
-        2027,
-        2028,
-        2029,
-        2031,
-        2032,
-        2033,
-        2034,
-        2035,
-        2036,
-        2037,
-        2038,
-        2039,
-        2040,
-        2041,
-        2042,
-        2043
-    ];
+    property <[int]> year_model: [2024, 2025, 2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033, 2034, 2035, 2036, 2037, 2038, 2039, 2040, 2041, 2042, 2043];
     property <int> selected_year: root.display_date.year;
     property <int> today_year: root.today[2];
     property <string> current_day: DatePickerAdapter.format_date("%a, %b %d", root.current_date.day, root.current_date.month, root.current_date.year);
@@ -388,7 +364,10 @@ export component DatePickerPopup inherits PopupWindow {
         width: 100%;
         height: 100%;
         title: root.title;
-        actions: [root.cancel_text, root.ok_text];
+        actions: [
+            root.cancel_text,
+            root.ok_text
+        ];
 
         content_layer := VerticalLayout {
             spacing: MaterialStyleMetrics.spacing_12;
@@ -401,7 +380,7 @@ export component DatePickerPopup inherits PopupWindow {
                     style: MaterialTypography.headline_large;
                 }
 
-                if root.selection_mode: IconButton {
+                if root.selection_mode : IconButton {
                     icon: Icons.edit;
                     accessible_label: "Toggle selection mode";
 
@@ -416,7 +395,7 @@ export component DatePickerPopup inherits PopupWindow {
                 background: MaterialPalette.outline;
             }
 
-            if root.selection_mode: HorizontalLayout {
+            if root.selection_mode : HorizontalLayout {
                 // FIXME: spacing
 
                 VerticalLayout {
@@ -430,7 +409,7 @@ export component DatePickerPopup inherits PopupWindow {
                     }
                 }
 
-                Rectangle { }
+                Rectangle {}
 
                 IconButton {
                     icon: Icons.chevron_backward;
@@ -451,8 +430,8 @@ export component DatePickerPopup inherits PopupWindow {
                 }
             }
 
-            if root.selection_mode: VerticalLayout {
-                if !root.year_selection: Calendar {
+            if root.selection_mode : VerticalLayout {
+                if !root.year_selection : Calendar {
                     min_width: root.calendar_min_width;
                     min_height: root.calendar_min_height;
                     column_count: root.calendar_column_count;
@@ -471,7 +450,7 @@ export component DatePickerPopup inherits PopupWindow {
                     }
                 }
 
-                if root.year_selection: YearSelection {
+                if root.year_selection : YearSelection {
                     min_width: root.calendar_min_width;
                     min_height: root.calendar_min_height;
                     column_count: root.year_selection_column_count;
@@ -494,7 +473,7 @@ export component DatePickerPopup inherits PopupWindow {
                 background: MaterialPalette.outline;
             }
 
-            if !root.selection_mode: TextField {
+            if !root.selection_mode : TextField {
                 text <=> root.current_input;
                 placeholder_text: root.input_placeholder_text;
                 trailing_icon: Icons.calendar_today;
@@ -511,7 +490,7 @@ export component DatePickerPopup inherits PopupWindow {
                 root.close();
                 root.canceled();
             } else if index == 1 {
-                root.accepted(root.date);
+            root.accepted(root.date);
             }
         }
 
@@ -541,6 +520,7 @@ export component DatePickerPopup inherits PopupWindow {
         if root.selection_mode {
             return root.current_date;
         }
+
         root.input_as_date()
     }
 
@@ -549,11 +529,7 @@ export component DatePickerPopup inherits PopupWindow {
     }
 
     pure function input_as_date() -> Date {
-        {
-            day: root.input_formatted[0],
-            month: root.input_formatted[1],
-            year: root.input_formatted[2]
-        }
+        { day: root.input_formatted[0], month: root.input_formatted[1], year: root.input_formatted[2] }
     }
 
     function select_date(date: Date) {
@@ -571,6 +547,7 @@ export component DatePickerPopup inherits PopupWindow {
             root.display_date = { day: 1, month: 1, year: root.display_date.year + 1 };
             return;
         }
+
         root.display_date = { day: 1, month: root.display_date.month + 1, year: root.display_date.year };
     }
 
@@ -579,6 +556,7 @@ export component DatePickerPopup inherits PopupWindow {
             root.display_date = { day: 1, month: 12, year: root.display_date.year - 1 };
             return;
         }
+
         root.display_date = { day: 1, month: root.display_date.month - 1, year: root.display_date.year };
     }
 

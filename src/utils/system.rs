@@ -3,7 +3,7 @@ use anyhow::{Context, Result};
 use pwd::Passwd;
 use std::fs;
 use tracing::{info, warn};
-use zbus::{Connection, proxy, zvariant::OwnedObjectPath};
+use zbus::{Connection, OwnedObjectPath, proxy};
 
 #[proxy(
     default_path = "/org/freedesktop/Accounts",
@@ -83,7 +83,7 @@ impl SystemUser {
         let mut users = Vec::new();
 
         for user_path in user_paths {
-            let user_proxy = UserProxy::builder(&conn).path(user_path)?.build().await?;
+            let user_proxy = UserProxy::builder(&conn).path(user_path).build().await?;
 
             let user_name = user_proxy.user_name().await.unwrap_or_default();
             let real_name = user_proxy.real_name().await.unwrap_or_default();
@@ -205,8 +205,9 @@ impl SystemSession {
         }
 
         let greetd_env = std::path::Path::new(paths::GREETD_ENVIRONMENTS);
-        if greetd_env.exists() {
-            if let Ok(content) = fs::read_to_string(greetd_env) {
+        if greetd_env.exists()
+            && let Ok(content) = fs::read_to_string(greetd_env)
+        {
                 for line in content.lines() {
                     let line = line.trim();
                     if !line.is_empty() && !line.starts_with('#') {
@@ -216,7 +217,6 @@ impl SystemSession {
                         });
                     }
                 }
-            }
         }
 
         sessions.sort_by(|a, b| a.name.cmp(&b.name));
@@ -232,10 +232,10 @@ impl SystemSession {
         if let Ok(entries) = std::fs::read_dir(path) {
             for entry in entries.flatten() {
                 let entry_path = entry.path();
-                if entry_path.extension().is_some_and(|ext| ext == "desktop") {
-                    if let Some(session) = Self::parse_desktop_file(&entry_path) {
-                        sessions.push(session);
-                    }
+                if entry_path.extension().is_some_and(|ext| ext == "desktop")
+                    && let Some(session) = Self::parse_desktop_file(&entry_path)
+                {
+                    sessions.push(session);
                 }
             }
         }

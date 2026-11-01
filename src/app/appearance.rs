@@ -1,6 +1,6 @@
 use crate::utils;
 use anyhow::{Context, Result};
-use material_colors::color::Argb;
+use material_colors::color::Rgb;
 use material_colors::theme::ThemeBuilder;
 use serde::{Deserialize, Serialize};
 use slint::{ComponentHandle, Image};
@@ -133,7 +133,7 @@ struct ThemeMetadata {
 fn string_to_color(color: String) -> slint::Color {
     let c = color
         .parse::<css_color_parser2::Color>()
-        .unwrap_or_else(|_| css_color_parser2::Color {
+        .unwrap_or(css_color_parser2::Color {
             r: 0,
             g: 0,
             b: 0,
@@ -143,8 +143,8 @@ fn string_to_color(color: String) -> slint::Color {
 }
 
 /// Converts an Argb color object to a HEX string.
-fn argb_to_hex(argb: Argb) -> String {
-    format!("#{:02x}{:02x}{:02x}", argb.red, argb.green, argb.blue)
+fn argb_to_hex(rgb: Rgb) -> String {
+    format!("#{:02x}{:02x}{:02x}", rgb.red, rgb.green, rgb.blue)
 }
 
 /// The built-in default theme embedded into the binary.
@@ -334,13 +334,12 @@ impl Appearance {
             .and_then(|content| toml::from_str::<ThemeMetadata>(&content).ok())
             .is_some_and(|cached| cached == current_meta);
 
-        if is_valid {
-            if let Some(theme) = fs::read_to_string(&theme_path)
+        if is_valid
+            && let Some(theme) = fs::read_to_string(&theme_path)
                 .ok()
                 .and_then(|content| serde_json::from_str(&content).ok())
-            {
-                return Some(theme);
-            }
+        {
+            return Some(theme);
         }
 
         info!("Generating dynamic theme (mode: {})", current_meta.mode);
@@ -350,10 +349,10 @@ impl Appearance {
                 .seed_color
                 .parse::<css_color_parser2::Color>()
                 .ok()
-                .map(|c| Argb::new((c.a * 255.) as u8, c.r, c.g, c.b))?,
+                .map(|c| Rgb::new(c.r, c.g, c.b))?,
             _ if !wallpaper_path.is_empty() => utils::image::extract_seed_color(wallpaper_path)
                 .ok()
-                .map(|[r, g, b, a]| Argb::new(a, r, g, b))?,
+                .map(|[r, g, b, _a]| Rgb::new(r, g, b))?,
             _ => return None,
         };
 
@@ -373,7 +372,7 @@ impl Appearance {
     }
 
     /// Creates a full Material Theme from a source ARGB seed color.
-    fn generate_from_seed(seed: Argb) -> MaterialTheme {
+    fn generate_from_seed(seed: Rgb) -> MaterialTheme {
         let m3_theme = ThemeBuilder::with_source(seed).build();
         let light = MaterialScheme::from_m3(m3_theme.schemes.light);
         let dark = MaterialScheme::from_m3(m3_theme.schemes.dark);
@@ -432,19 +431,19 @@ mod tests {
 
     #[test]
     fn test_argb_to_hex() {
-        let argb = Argb::new(255, 255, 128, 64);
+        let argb = Rgb::new(255, 128, 64);
         assert_eq!(argb_to_hex(argb), "#ff8040");
     }
 
     #[test]
     fn test_material_scheme_macro() {
         // Test parsing from material_colors scheme
-        let mut m3_scheme = ThemeBuilder::with_source(Argb::new(255, 0, 0, 0))
+        let mut m3_scheme = ThemeBuilder::with_source(Rgb::new(0, 0, 0))
             .build()
             .schemes
             .light;
-        m3_scheme.primary = Argb::new(255, 10, 20, 30);
-        m3_scheme.on_primary = Argb::new(255, 40, 50, 60);
+        m3_scheme.primary = Rgb::new(10, 20, 30);
+        m3_scheme.on_primary = Rgb::new(40, 50, 60);
 
         // Ensure primary was successfully overridden
         let scheme = MaterialScheme::from_m3(m3_scheme);

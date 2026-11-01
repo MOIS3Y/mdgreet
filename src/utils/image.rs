@@ -1,7 +1,7 @@
 use crate::config;
 use crate::utils;
 use anyhow::{Context, Result};
-use material_colors::color::Argb;
+use material_colors::color::Rgb;
 use material_colors::quantize::{Quantizer, QuantizerCelebi};
 use material_colors::score::Score;
 use std::fs;
@@ -95,28 +95,27 @@ pub fn extract_seed_color(path: &str) -> Result<[u8; 4]> {
     let resized = img.resize_exact(128, 128, image::imageops::FilterType::Lanczos3);
     let rgb = resized.to_rgba8();
 
-    // Convert pixels to Argb format for material-colors quantizer
+    // Convert pixels to RGB format for material-colors quantizer
     let mut pixels = Vec::with_capacity(128 * 128);
     for pixel in rgb.pixels() {
-        let [r, g, b, a] = pixel.0;
-        pixels.push(Argb::new(a, r, g, b));
+        let [r, g, b, _a] = pixel.0;
+        pixels.push(Rgb::new(r, g, b));
     }
 
     // Quantize colors
     let colors = QuantizerCelebi::quantize(&pixels, 128);
 
     // Score colors and get the best one
-    // Signature for 0.4.2: score(map, top_count, fallback, filter)
     let ranked = Score::score(&colors.color_to_count, Some(1), None, None);
     let best_color = ranked
         .first()
         .cloned()
-        .unwrap_or(Argb::from_u32(0xFF445E91));
+        .unwrap_or(Rgb::from_u32(0x445E91));
 
     Ok([
         best_color.red,
         best_color.green,
         best_color.blue,
-        best_color.alpha,
+        255,
     ])
 }
