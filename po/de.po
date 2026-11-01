@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: mdgreet 0.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-09 13:41+0900\n"
+"POT-Creation-Date: 2026-11-01 15:59+0900\n"
 "PO-Revision-Date: 2026-05-09 12:00+0300\n"
 "Last-Translator: Stepan Zhukovsky <stepan@zhukovsky.me>\n"
 "Language-Team: German\n"
@@ -16,6 +16,50 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: src/app/login.rs:99
+msgid "Touch the fingerprint reader"
+msgstr "Finger auf den Sensor legen"
+
+#: src/app/login.rs:101
+msgid "Use password to continue"
+msgstr "Zum Fortfahren Passwort verwenden"
+
+#: src/app/login.rs:122 src/app/login/view.rs:39
+msgid "Waiting for password prompt"
+msgstr "Warten auf die Passwortabfrage"
+
+#: src/app/login.rs:161
+msgid "No compositor selected"
+msgstr "Kein Compositor ausgewählt"
+
+#: src/app/login/view.rs:41 src/app/login/view.rs:129
+msgid "Authenticating"
+msgstr "Anmeldung wird geprüft"
+
+#: src/app/login/view.rs:61
+msgid "Cancelling authentication"
+msgstr "Anmeldung wird abgebrochen"
+
+#: src/app/login/view.rs:140
+msgid "Starting session"
+msgstr "Sitzung wird gestartet"
+
+#: src/app/login/view.rs:167
+msgid "Demo: authentication successful"
+msgstr "Demo: Anmeldung erfolgreich"
+
+#: src/app/login/view.rs:170 src/app/login/view.rs:194
+msgid "Authentication cancelled"
+msgstr "Anmeldung abgebrochen"
+
+#: src/app/login/view.rs:176
+msgid "Invalid username or password"
+msgstr "Ungültiger Benutzername oder Passwort"
+
+#: src/app/login/attempt.rs:152
+msgid "Invalid session command"
+msgstr "Ungültiger Sitzungsbefehl"
 
 #: src/app/session.rs:68
 msgid "No sessions found"
@@ -106,31 +150,47 @@ msgstr "Dezember"
 msgid "{weekday}, {month} {day}"
 msgstr "{weekday}, {day}. {month}"
 
-#: src/app/login.rs:26
-msgid "No compositor selected"
-msgstr "Kein Compositor ausgewählt"
+#: src/utils/client/demo.rs:79
+msgid "Demo: waiting for fingerprint"
+msgstr "Demo: Warten auf Fingerabdruck"
 
-#: src/utils/client.rs:51
+#: src/utils/client/demo.rs:110
+msgid "Demo: fingerprint not recognized"
+msgstr "Demo: Fingerabdruck nicht erkannt"
+
+#: src/utils/client/demo.rs:122
+msgid "Password"
+msgstr "Passwort"
+
+#: src/utils/client/conversation.rs:121
+msgid "Failed to cancel authentication"
+msgstr "Anmeldung konnte nicht abgebrochen werden"
+
+#: src/utils/client/conversation.rs:191
+msgid "Authentication failed. Try again or use your password."
+msgstr "Anmeldung fehlgeschlagen. Erneut versuchen oder Passwort verwenden."
+
+#: src/utils/client/conversation.rs:193
+msgid "Authentication service error"
+msgstr "Fehler des Anmeldedienstes"
+
+#: src/utils/client/conversation.rs:198
+msgid "Authentication cancellation timed out"
+msgstr "Zeitüberschreitung beim Abbrechen der Anmeldung"
+
+#: src/utils/client.rs:79
 msgid "GREETD_SOCK is not set. Are you running under greetd?"
 msgstr "GREETD_SOCK ist nicht gesetzt. Läuft das Programm unter greetd?"
 
-#: src/utils/client.rs:96 src/utils/client.rs:125
-msgid "Invalid username or password"
-msgstr "Ungültiger Benutzername oder Passwort"
-
-#: src/utils/client.rs:128
-msgid "greetd error"
-msgstr "greetd Fehler"
-
-#: src/utils/client.rs:161
+#: src/utils/client.rs:110
 msgid "Failed to start session"
 msgstr "Sitzung konnte nicht gestartet werden"
 
-#: src/utils/client.rs:165
+#: src/utils/client.rs:118
 msgid "Unexpected AuthMessage when trying to start session"
 msgstr "Unerwartete AuthMessage beim Versuch, die Sitzung zu starten"
 
-#: ui/main.slint:117
+#: ui/main.slint:175
 msgctxt "GreeterWindow"
 msgid "Press any key to unlock"
 msgstr "Zum Entsperren beliebige Taste drücken"
@@ -160,27 +220,42 @@ msgctxt "PowerBottomSheet"
 msgid "Shut down"
 msgstr "Herunterfahren"
 
-#: ui/components/login.slint:114
+#: ui/components/login.slint:51 ui/components/login.slint:301
+msgctxt "Login"
+msgid "Waiting for password prompt"
+msgstr "Warten auf die Passwortabfrage"
+
+#: ui/components/login.slint:164
 msgctxt "Login"
 msgid "User"
 msgstr "Benutzer"
 
-#: ui/components/login.slint:131
+#: ui/components/login.slint:181
 msgctxt "Login"
 msgid "Username"
 msgstr "Benutzername"
 
-#: ui/components/login.slint:145
+#: ui/components/login.slint:221
 msgctxt "Login"
 msgid "Password"
 msgstr "Passwort"
 
-#: ui/components/login.slint:172
+#: ui/components/login.slint:262
+msgctxt "Login"
+msgid "Use password"
+msgstr "Passwort verwenden"
+
+#: ui/components/login.slint:262
+msgctxt "Login"
+msgid "Use fingerprint"
+msgstr "Fingerabdruck verwenden"
+
+#: ui/components/login.slint:275
 msgctxt "Login"
 msgid "Select from list"
 msgstr "Aus Liste wählen"
 
-#: ui/components/login.slint:172
+#: ui/components/login.slint:275
 msgctxt "Login"
 msgid "Not listed?"
 msgstr "Nicht in der Liste?"

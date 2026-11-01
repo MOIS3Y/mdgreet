@@ -12,7 +12,7 @@ msgstr ""
 "#-#-#-#-#  rust.pot (PACKAGE VERSION)  #-#-#-#-#\n"
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-09 13:41+0900\n"
+"POT-Creation-Date: 2026-11-01 15:59+0900\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -22,7 +22,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "#-#-#-#-#  slint.pot (PACKAGE VERSION)  #-#-#-#-#\n"
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2026-05-09 04:57+0000\n"
+"POT-Creation-Date: 2026-11-01 06:59+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -30,7 +30,51 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: \n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: src/app/login.rs:99
+msgid "Touch the fingerprint reader"
+msgstr ""
+
+#: src/app/login.rs:101
+msgid "Use password to continue"
+msgstr ""
+
+#: src/app/login.rs:122 src/app/login/view.rs:39
+msgid "Waiting for password prompt"
+msgstr ""
+
+#: src/app/login.rs:161
+msgid "No compositor selected"
+msgstr ""
+
+#: src/app/login/view.rs:41 src/app/login/view.rs:129
+msgid "Authenticating"
+msgstr ""
+
+#: src/app/login/view.rs:61
+msgid "Cancelling authentication"
+msgstr ""
+
+#: src/app/login/view.rs:140
+msgid "Starting session"
+msgstr ""
+
+#: src/app/login/view.rs:167
+msgid "Demo: authentication successful"
+msgstr ""
+
+#: src/app/login/view.rs:170 src/app/login/view.rs:194
+msgid "Authentication cancelled"
+msgstr ""
+
+#: src/app/login/view.rs:176
+msgid "Invalid username or password"
+msgstr ""
+
+#: src/app/login/attempt.rs:152
+msgid "Invalid session command"
+msgstr ""
 
 #: src/app/session.rs:68
 msgid "No sessions found"
@@ -121,31 +165,47 @@ msgstr ""
 msgid "{weekday}, {month} {day}"
 msgstr ""
 
-#: src/app/login.rs:26
-msgid "No compositor selected"
+#: src/utils/client/demo.rs:79
+msgid "Demo: waiting for fingerprint"
 msgstr ""
 
-#: src/utils/client.rs:51
+#: src/utils/client/demo.rs:110
+msgid "Demo: fingerprint not recognized"
+msgstr ""
+
+#: src/utils/client/demo.rs:122
+msgid "Password"
+msgstr ""
+
+#: src/utils/client/conversation.rs:121
+msgid "Failed to cancel authentication"
+msgstr ""
+
+#: src/utils/client/conversation.rs:191
+msgid "Authentication failed. Try again or use your password."
+msgstr ""
+
+#: src/utils/client/conversation.rs:193
+msgid "Authentication service error"
+msgstr ""
+
+#: src/utils/client/conversation.rs:198
+msgid "Authentication cancellation timed out"
+msgstr ""
+
+#: src/utils/client.rs:79
 msgid "GREETD_SOCK is not set. Are you running under greetd?"
 msgstr ""
 
-#: src/utils/client.rs:96 src/utils/client.rs:125
-msgid "Invalid username or password"
-msgstr ""
-
-#: src/utils/client.rs:128
-msgid "greetd error"
-msgstr ""
-
-#: src/utils/client.rs:161
+#: src/utils/client.rs:110
 msgid "Failed to start session"
 msgstr ""
 
-#: src/utils/client.rs:165
+#: src/utils/client.rs:118
 msgid "Unexpected AuthMessage when trying to start session"
 msgstr ""
 
-#: ui/main.slint:117
+#: ui/main.slint:175
 msgctxt "GreeterWindow"
 msgid "Press any key to unlock"
 msgstr ""
@@ -175,27 +235,42 @@ msgctxt "PowerBottomSheet"
 msgid "Shut down"
 msgstr ""
 
-#: ui/components/login.slint:114
+#: ui/components/login.slint:51 ui/components/login.slint:301
+msgctxt "Login"
+msgid "Waiting for password prompt"
+msgstr ""
+
+#: ui/components/login.slint:164
 msgctxt "Login"
 msgid "User"
 msgstr ""
 
-#: ui/components/login.slint:131
+#: ui/components/login.slint:181
 msgctxt "Login"
 msgid "Username"
 msgstr ""
 
-#: ui/components/login.slint:145
+#: ui/components/login.slint:221
 msgctxt "Login"
 msgid "Password"
 msgstr ""
 
-#: ui/components/login.slint:172
+#: ui/components/login.slint:262
+msgctxt "Login"
+msgid "Use password"
+msgstr ""
+
+#: ui/components/login.slint:262
+msgctxt "Login"
+msgid "Use fingerprint"
+msgstr ""
+
+#: ui/components/login.slint:275
 msgctxt "Login"
 msgid "Select from list"
 msgstr ""
 
-#: ui/components/login.slint:172
+#: ui/components/login.slint:275
 msgctxt "Login"
 msgid "Not listed?"
 msgstr ""

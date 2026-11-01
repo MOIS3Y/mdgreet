@@ -42,7 +42,7 @@ async fn main() {
 
     // Initialize State and Login orchestrators
     app::State::init(&ui, cache.clone(), &users_data);
-    app::Login::init(&ui, cache.clone(), args.demo);
+    app::Login::init(&ui, cache.clone(), args.demo, &config.auth);
 
     // Start the Slint event loop
     ui.run().unwrap();

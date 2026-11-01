@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: mdgreet 0.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-09 13:41+0900\n"
+"POT-Creation-Date: 2026-11-01 15:59+0900\n"
 "PO-Revision-Date: 2026-05-08 12:00+0300\n"
 "Last-Translator: Stepan Zhukovsky <stepan@zhukovsky.me>\n"
 "Language-Team: Russian\n"
@@ -17,6 +17,50 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+#: src/app/login.rs:99
+msgid "Touch the fingerprint reader"
+msgstr "Приложите палец к сканеру"
+
+#: src/app/login.rs:101
+msgid "Use password to continue"
+msgstr "Для продолжения войдите по паролю"
+
+#: src/app/login.rs:122 src/app/login/view.rs:39
+msgid "Waiting for password prompt"
+msgstr "Ожидание запроса пароля"
+
+#: src/app/login.rs:161
+msgid "No compositor selected"
+msgstr "Не выбран композитор"
+
+#: src/app/login/view.rs:41 src/app/login/view.rs:129
+msgid "Authenticating"
+msgstr "Проверка"
+
+#: src/app/login/view.rs:61
+msgid "Cancelling authentication"
+msgstr "Отмена авторизации"
+
+#: src/app/login/view.rs:140
+msgid "Starting session"
+msgstr "Запуск сеанса"
+
+#: src/app/login/view.rs:167
+msgid "Demo: authentication successful"
+msgstr "Демо: авторизация успешна"
+
+#: src/app/login/view.rs:170 src/app/login/view.rs:194
+msgid "Authentication cancelled"
+msgstr "Авторизация отменена"
+
+#: src/app/login/view.rs:176
+msgid "Invalid username or password"
+msgstr "Неверное имя пользователя или пароль"
+
+#: src/app/login/attempt.rs:152
+msgid "Invalid session command"
+msgstr "Некорректная команда сеанса"
 
 #: src/app/session.rs:68
 msgid "No sessions found"
@@ -107,32 +151,48 @@ msgstr "декабря"
 msgid "{weekday}, {month} {day}"
 msgstr "{weekday}, {day} {month}"
 
-#: src/app/login.rs:26
-msgid "No compositor selected"
-msgstr "Не выбран композитор"
+#: src/utils/client/demo.rs:79
+msgid "Demo: waiting for fingerprint"
+msgstr "Демо: ожидание отпечатка пальца"
 
-#: src/utils/client.rs:51
+#: src/utils/client/demo.rs:110
+msgid "Demo: fingerprint not recognized"
+msgstr "Демо: отпечаток не распознан"
+
+#: src/utils/client/demo.rs:122
+msgid "Password"
+msgstr "Пароль"
+
+#: src/utils/client/conversation.rs:121
+msgid "Failed to cancel authentication"
+msgstr "Не удалось отменить авторизацию"
+
+#: src/utils/client/conversation.rs:191
+msgid "Authentication failed. Try again or use your password."
+msgstr "Не удалось войти. Повторите попытку или введите пароль."
+
+#: src/utils/client/conversation.rs:193
+msgid "Authentication service error"
+msgstr "Ошибка службы авторизации"
+
+#: src/utils/client/conversation.rs:198
+msgid "Authentication cancellation timed out"
+msgstr "Время ожидания отмены авторизации истекло"
+
+#: src/utils/client.rs:79
 msgid "GREETD_SOCK is not set. Are you running under greetd?"
 msgstr ""
 "Переменная GREETD_SOCK не установлена. Запущено ли приложение через greetd?"
 
-#: src/utils/client.rs:96 src/utils/client.rs:125
-msgid "Invalid username or password"
-msgstr "Неверное имя пользователя или пароль"
-
-#: src/utils/client.rs:128
-msgid "greetd error"
-msgstr "Ошибка greetd"
-
-#: src/utils/client.rs:161
+#: src/utils/client.rs:110
 msgid "Failed to start session"
 msgstr "Не удалось запустить сессию"
 
-#: src/utils/client.rs:165
+#: src/utils/client.rs:118
 msgid "Unexpected AuthMessage when trying to start session"
 msgstr "Неожиданное сообщение авторизации при попытке запустить сессию"
 
-#: ui/main.slint:117
+#: ui/main.slint:175
 msgctxt "GreeterWindow"
 msgid "Press any key to unlock"
 msgstr "Нажмите любую клавишу, чтобы разблокировать"
@@ -162,27 +222,42 @@ msgctxt "PowerBottomSheet"
 msgid "Shut down"
 msgstr "Выключение"
 
-#: ui/components/login.slint:114
+#: ui/components/login.slint:51 ui/components/login.slint:301
+msgctxt "Login"
+msgid "Waiting for password prompt"
+msgstr "Ожидание запроса пароля"
+
+#: ui/components/login.slint:164
 msgctxt "Login"
 msgid "User"
 msgstr "Пользователь"
 
-#: ui/components/login.slint:131
+#: ui/components/login.slint:181
 msgctxt "Login"
 msgid "Username"
 msgstr "Имя пользователя"
 
-#: ui/components/login.slint:145
+#: ui/components/login.slint:221
 msgctxt "Login"
 msgid "Password"
 msgstr "Пароль"
 
-#: ui/components/login.slint:172
+#: ui/components/login.slint:262
+msgctxt "Login"
+msgid "Use password"
+msgstr "Войти по паролю"
+
+#: ui/components/login.slint:262
+msgctxt "Login"
+msgid "Use fingerprint"
+msgstr "Войти по отпечатку"
+
+#: ui/components/login.slint:275
 msgctxt "Login"
 msgid "Select from list"
 msgstr "Выбрать из списка"
 
-#: ui/components/login.slint:172
+#: ui/components/login.slint:275
 msgctxt "Login"
 msgid "Not listed?"
 msgstr "Нет в списке?"
