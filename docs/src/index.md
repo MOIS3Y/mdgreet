@@ -11,6 +11,8 @@ mdgreet is a fast, visually appealing, and highly customizable login screen for 
 - **Fast and Lightweight:** Built with Rust, ensuring quick startup times and minimal resource usage.
 - **Internationalization (i18n):** Native support for multiple languages.
 - **Wayland Native:** Runs perfectly under Wayland compositors like Cage or Sway.
+- **Fingerprint Login:** Sign in through greetd/PAM with automatic or explicit
+  start and password fallback.
 
 ## Interface Preview
 
@@ -18,7 +20,11 @@ mdgreet is a fast, visually appealing, and highly customizable login screen for 
 
 ![Main Screen](./assets/main-screen.png)
 
-*The login card with smooth background blur transition.*
+*The fingerprint login card with password fallback.*
+
+![Fingerprint Login Screen](./assets/fingerprint-screen.png)
+
+*The password login card with smooth background blur transition.*
 
 ![Login Screen](./assets/login-screen.png)
 

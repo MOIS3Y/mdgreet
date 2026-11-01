@@ -1,5 +1,7 @@
 # Fingerprint login
 
+![Fingerprint login card in demo mode](../assets/fingerprint-screen.png)
+
 Use your fingerprint to sign in, with password entry available when you need it.
 Authentication is performed by greetd using the system's PAM configuration.
 
