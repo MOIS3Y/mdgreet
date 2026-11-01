@@ -54,8 +54,10 @@ jobs:
         id: extract_release_notes
         run: |
           TAG_NAME=${GITHUB_REF#refs/tags/}
+          TAG_VERSION=${TAG_NAME#v}
           # Extract content between the current tag header and the next tag header
-          awk "/## \[$TAG_NAME\]/{flag=1;next}/^## \[/{flag=0}flag" CHANGELOG.md > RELEASE_NOTES.md
+          awk -v header="## [$TAG_VERSION] - " 'index($0, header) == 1 {flag=1; next} /^## \[/ {flag=0} flag' CHANGELOG.md > RELEASE_NOTES.md
+          test -s RELEASE_NOTES.md
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3

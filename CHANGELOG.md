@@ -1,4 +1,21 @@
-## [v0.1.0] - 2026-05-15
+## [0.2.0] - 2026-11-01
+
+### 🚀 Features
+
+- *(auth)* Add fingerprint login through greetd
+
+### 🚜 Refactor
+
+- *(ui)* Upgrade Slint Material and Rust dependencies
+
+### 📚 Documentation
+
+- *(readme)* Add demo mode quick preview
+- *(auth)* Document fingerprint setup and configuration
+- *(ui)* Refresh screenshots for fingerprint login
+- *(auth)* Clarify fingerprint UI and PAM behavior
+
+## [0.1.0] - 2026-05-15
 
 ### Initial Release
 
